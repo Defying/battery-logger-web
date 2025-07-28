@@ -5,26 +5,25 @@
 /* Import existing styles */
 @import './styles.css';
 
-@keyframes gradientMove {
-  0% {
+.progress-bar .progress.waiting {
+  width: 100%;
+  background: linear-gradient(
+    90deg,
+    rgba(212, 148, 66, 1) 0%,
+    rgba(196, 81, 43, 1) 25%,
+    rgba(106, 0, 255, 1) 50%,
+    rgba(56, 146, 214, 1) 75%,
+    rgba(212, 148, 66, 1) 100%
+  );
+  background-size: 150% 100%;
+  animation: moveGradient 12s linear infinite;
+}
+
+@keyframes moveGradient {
+  0%, 100% {
     background-position: 0% 50%;
   }
   50% {
-    background-position: 100% 50%;
+    background-position: 150% 50%;
   }
-  100% {
-    background-position: 0% 50%;
-  }
-}
-
-.progress-bar .progress.waiting {
-  width: 100%;
-  background: linear-gradient(90deg, 
-    rgba(212, 148, 66, 1) 0%,
-    rgba(196, 81, 43, 1) 22%,
-    rgba(106, 0, 255, 1) 52%,
-    rgba(56, 146, 214, 1) 100%
-  );
-  background-size: 150% 100%;
-  animation: gradientMove 6s linear infinite;
 } 
