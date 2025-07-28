@@ -14,11 +14,19 @@ class BatteryLogger {
         this.requiredStable = 10;
         this.epsilonResistance = 0.01;
         this.epsilonVoltage = 0.001;
+        this.isReadingInProgress = false;
+        this.lastReadingTime = 0;
+        this.COOLDOWN_PERIOD = 3000; // 3 seconds cooldown
+        this.noSignalTimeout = null;
+        this.waitingForProbeRemoval = false;
+        this.PROBE_REMOVAL_THRESHOLD = 0.1; // Voltage threshold to detect probe removal
+        this.readingLocked = false; // New property to track if we're between multiple readings
 
         // UI Elements
         this.connectButton = document.getElementById('connectButton');
         this.statusText = document.getElementById('statusText');
         this.cellTypeInput = document.getElementById('cellType');
+        this.customCellTypeInput = document.getElementById('customCellType');
         this.averagingCheckbox = document.getElementById('averaging');
         this.numReadingsInput = document.getElementById('numReadings');
         this.cellNumberSpan = document.getElementById('cellNumber');
@@ -29,8 +37,36 @@ class BatteryLogger {
         this.readingsLog = document.getElementById('readingsLog');
         this.exportButton = document.getElementById('exportButton');
         this.clearButton = document.getElementById('clearButton');
+        this.readingCounterSpan = document.createElement('div');
+        this.readingCounterSpan.className = 'text-sm text-gray-600 dark:text-gray-400 mt-2';
+        this.stabilityText.parentNode.insertBefore(this.readingCounterSpan, this.stabilityText.nextSibling);
+        this.readingNumberSpan = document.getElementById('readingNumber');
+        this.readingsLogTitle = document.getElementById('readingsLogTitle');
+        
+        // Update title initially
+        this.updateReadingsLogTitle();
+
+        // Add event listener for cell type changes
+        this.cellTypeInput.addEventListener('change', () => {
+            const isCustom = this.cellTypeInput.value === 'custom';
+            this.customCellTypeInput.classList.toggle('hidden', !isCustom);
+            if (isCustom) {
+                this.customCellTypeInput.focus();
+            }
+        });
+
+        // Update readings log title when either input changes
+        this.cellTypeInput.addEventListener('change', () => this.updateReadingsLogTitle());
+        this.customCellTypeInput.addEventListener('input', () => {
+            if (this.cellTypeInput.value === 'custom') {
+                this.updateReadingsLogTitle();
+            }
+        });
 
         this.initializeEventListeners();
+        this.progressBar = document.querySelector('#stabilityProgress .progress');
+        this.progressBar.classList.add('waiting');
+        this.stabilityText.textContent = 'Idle';
     }
 
     initializeEventListeners() {
@@ -56,6 +92,7 @@ class BatteryLogger {
             this.isConnected = true;
             
             this.updateUI('connected');
+            this.stabilityText.textContent = 'Waiting for stable reading...';
             this.startReading();
         } catch (error) {
             console.error('Connection error:', error);
@@ -73,6 +110,8 @@ class BatteryLogger {
         }
         this.isConnected = false;
         this.updateUI('disconnected');
+        this.stabilityText.textContent = 'Idle';
+        this.readingNumberSpan.textContent = '-';
     }
 
     async startReading() {
@@ -130,30 +169,84 @@ class BatteryLogger {
     }
 
     updateReadings(voltage, resistance, rUnit) {
+        // Always update current values for real-time display
+        this.updateCurrentValues(voltage, resistance, rUnit);
+
+        const now = Date.now();
         const isValid = typeof voltage === 'number' && typeof resistance === 'number' && voltage > 0;
 
-        if (isValid) {
-            const isStable = this.checkStability(voltage, resistance, rUnit);
-            
-            if (isStable) {
-                this.stableCount++;
-                this.updateStabilityUI(this.stableCount / this.requiredStable);
-                
-                if (this.stableCount === this.requiredStable) {
-                    this.recordReading(voltage, resistance, rUnit);
-                }
-            } else {
-                this.stableCount = 0;
-                this.updateStabilityUI(0);
-            }
-        } else {
-            this.stableCount = 0;
-            this.updateStabilityUI(0);
-            this.stabilityText.textContent = 'Invalid reading';
+        // Clear any existing timeout
+        if (this.noSignalTimeout) {
+            clearTimeout(this.noSignalTimeout);
         }
 
-        // Update current values display
-        this.updateCurrentValues(voltage, resistance, rUnit);
+        // Check if probes have been removed (voltage near zero)
+        if (this.waitingForProbeRemoval && (!isValid || (typeof voltage === 'number' && voltage < this.PROBE_REMOVAL_THRESHOLD))) {
+            this.waitingForProbeRemoval = false;
+            this.isReadingInProgress = false;
+            this.stableCount = 0;
+            this.updateStabilityUI(0);
+            if (this.currentReadings.length < (this.averagingCheckbox.checked ? parseInt(this.numReadingsInput.value) : 1)) {
+                this.stabilityText.textContent = 'Ready for next reading';
+            }
+            return;
+        }
+
+        // Set timeout to detect complete signal loss
+        this.noSignalTimeout = setTimeout(() => {
+            if (!isValid && !this.waitingForProbeRemoval) {
+                this.stableCount = 0;
+                this.updateStabilityUI(0);
+                if (!this.waitingForProbeRemoval) {
+                    this.stabilityText.textContent = 'Waiting for stable reading...';
+                }
+            }
+        }, 1000);
+
+        if (!isValid) {
+            if (!this.waitingForProbeRemoval && this.isReadingInProgress) {
+                this.stableCount = 0;
+                this.updateStabilityUI(0);
+                this.stabilityText.textContent = 'Invalid reading';
+            }
+            return;
+        }
+
+        // If waiting for probe removal, don't process new readings
+        if (this.waitingForProbeRemoval) {
+            this.stabilityText.textContent = 'Remove probes before next reading';
+            return;
+        }
+
+        // If in cooldown and not in a reading sequence, don't start new reading
+        if (!this.isReadingInProgress && now - this.lastReadingTime < this.COOLDOWN_PERIOD) {
+            this.stabilityText.textContent = 'Please wait before next reading...';
+            return;
+        }
+
+        // Start new reading if not in progress
+        if (!this.isReadingInProgress) {
+            this.isReadingInProgress = true;
+            this.stableCount = 0;
+            this.prevVoltage = null;
+            this.prevResistance = null;
+            this.updateStabilityUI(0);
+        }
+
+        const isStable = this.checkStability(voltage, resistance, rUnit);
+        
+        if (isStable) {
+            this.stableCount++;
+            this.updateStabilityUI(this.stableCount / this.requiredStable);
+            
+            if (this.stableCount === this.requiredStable) {
+                this.recordReading(voltage, resistance, rUnit);
+                this.lastReadingTime = now;
+            }
+        } else if (!this.waitingForProbeRemoval) {
+            this.stableCount = 0;
+            this.updateStabilityUI(0);
+        }
     }
 
     checkStability(voltage, resistance, rUnit) {
@@ -184,29 +277,32 @@ class BatteryLogger {
     }
 
     recordReading(voltage, resistance, rUnit) {
-        // Only proceed if we have valid numbers
         if (typeof voltage !== 'number' || typeof resistance !== 'number') {
             return;
         }
 
         const numReadings = this.averagingCheckbox.checked ? parseInt(this.numReadingsInput.value) : 1;
         
-        // Add to current readings only after stability is confirmed
-        if (this.stableCount >= this.requiredStable) {
-            this.currentReadings.push({ voltage, resistance });
-            this.stabilityText.textContent = `Reading ${this.currentReadings.length} of ${numReadings} captured`;
-            this.stableCount = 0; // Reset stability counter for next reading
-            this.prevVoltage = null; // Reset previous values to force new stabilization
-            this.prevResistance = null;
-        }
+        this.currentReadings.push({ voltage, resistance });
+        const currentReadingNum = this.currentReadings.length;
+        this.readingCounterSpan.textContent = `Reading ${currentReadingNum} of ${numReadings}`;
+        this.stabilityText.textContent = currentReadingNum === numReadings ? 'Final reading captured' : 'Reading captured';
+        
+        // Wait for probe removal before next reading
+        this.waitingForProbeRemoval = true;
 
-        if (this.currentReadings.length === numReadings) {
+        if (currentReadingNum === numReadings) {
             const avgVoltage = this.currentReadings.reduce((sum, r) => sum + r.voltage, 0) / numReadings;
             const avgResistance = this.currentReadings.reduce((sum, r) => sum + r.resistance, 0) / numReadings;
 
+            let cellType = this.cellTypeInput.value;
+            if (cellType === 'custom') {
+                cellType = this.customCellTypeInput.value.trim() || 'Custom';
+            }
+
             const reading = {
                 cellNum: this.cellNum,
-                cellType: this.cellTypeInput.value,
+                cellType: cellType,
                 voltage: avgVoltage.toFixed(4),
                 resistance: avgResistance.toFixed(4),
                 rUnit: rUnit,
@@ -218,38 +314,48 @@ class BatteryLogger {
             
             this.cellNum++;
             this.currentReadings = [];
-            this.stableCount = 0;
-            this.prevVoltage = null; // Reset previous values
-            this.prevResistance = null;
-            
-            this.updateStabilityUI(0);
+            this.waitingForProbeRemoval = true;
             this.stabilityText.textContent = 'Reading saved. Move probes to next cell.';
+            this.readingCounterSpan.textContent = '';
+        } else {
+            this.stabilityText.textContent = 'Remove probes before next reading';
         }
     }
 
     updateCurrentValues(voltage, resistance, rUnit) {
         this.cellNumberSpan.textContent = this.cellNum;
+        const totalReadings = this.averagingCheckbox.checked ? parseInt(this.numReadingsInput.value) : 1;
+        this.readingNumberSpan.textContent = this.isConnected ? `${this.currentReadings.length + 1}/${totalReadings}` : '-';
         this.voltageSpan.textContent = typeof voltage === 'number' ? voltage.toFixed(4) + 'V' : voltage;
         this.resistanceSpan.textContent = typeof resistance === 'number' ? resistance.toFixed(4) + ' ' + rUnit : resistance;
     }
 
     updateStabilityUI(progress) {
-        this.stabilityProgress.style.width = `${progress * 100}%`;
-        if (progress === 0) {
-            this.stabilityText.textContent = 'Waiting for stable reading...';
-        } else if (progress < 1) {
-            this.stabilityText.textContent = 'Stabilizing...';
+        // Only update UI if not waiting for probe removal
+        if (!this.waitingForProbeRemoval) {
+            if (progress === 0) {
+                this.progressBar.style.width = '100%';
+                this.progressBar.classList.add('waiting');
+                this.stabilityText.textContent = 'Waiting for stable reading...';
+            } else {
+                this.progressBar.style.width = `${progress * 100}%`;
+                this.progressBar.classList.remove('waiting');
+                if (progress < 1) {
+                    this.stabilityText.textContent = 'Stabilizing...';
+                }
+            }
         }
     }
 
     addReadingToTable(reading) {
         const row = document.createElement('tr');
+        row.className = 'text-gray-900 dark:text-gray-200'; // Add dark mode text color
         row.innerHTML = `
-            <td>${reading.cellNum}</td>
-            <td>${reading.cellType || 'N/A'}</td>
-            <td>${reading.voltage}V</td>
-            <td>${reading.resistance} ${reading.rUnit}</td>
-            <td>${new Date(reading.timestamp).toLocaleTimeString()}</td>
+            <td class="px-6 py-4 whitespace-nowrap">${reading.cellNum}</td>
+            <td class="px-6 py-4 whitespace-nowrap">${reading.cellType || 'N/A'}</td>
+            <td class="px-6 py-4 whitespace-nowrap">${reading.voltage}V</td>
+            <td class="px-6 py-4 whitespace-nowrap">${reading.resistance} ${reading.rUnit}</td>
+            <td class="px-6 py-4 whitespace-nowrap">${new Date(reading.timestamp).toLocaleTimeString()}</td>
         `;
         this.readingsLog.insertBefore(row, this.readingsLog.firstChild);
     }
@@ -259,16 +365,16 @@ class BatteryLogger {
             case 'connected':
                 this.connectButton.textContent = 'Disconnect';
                 this.statusText.textContent = 'Connected';
-                this.statusText.style.color = 'var(--success-color)';
+                this.statusText.className = 'text-green-600 dark:text-green-400';
                 break;
             case 'disconnected':
                 this.connectButton.textContent = 'Connect Device';
                 this.statusText.textContent = 'Not Connected';
-                this.statusText.style.color = 'var(--text-color)';
+                this.statusText.className = 'text-gray-700 dark:text-gray-300';
                 break;
             case 'error':
                 this.statusText.textContent = message;
-                this.statusText.style.color = 'var(--error-color)';
+                this.statusText.className = 'text-red-600 dark:text-red-400';
                 break;
         }
     }
@@ -301,6 +407,14 @@ class BatteryLogger {
         link.click();
     }
 
+    updateReadingsLogTitle() {
+        let cellType = this.cellTypeInput.value;
+        if (cellType === 'custom') {
+            cellType = this.customCellTypeInput.value.trim() || 'Custom';
+        }
+        this.readingsLogTitle.textContent = `${cellType} Readings`;
+    }
+
     clearLog() {
         if (confirm('Are you sure you want to clear all readings?')) {
             this.readings = [];
@@ -308,8 +422,30 @@ class BatteryLogger {
             this.cellNum = 1;
             this.currentReadings = [];
             this.stableCount = 0;
+            this.isReadingInProgress = false;
+            this.waitingForProbeRemoval = false;
+            this.lastReadingTime = 0;
             this.updateCurrentValues('-', '-', '');
+            this.readingNumberSpan.textContent = '-/-';
             this.updateStabilityUI(0);
+            this.readingCounterSpan.textContent = '';
+            this.stabilityText.textContent = 'Waiting for stable reading...';
+            this.updateReadingsLogTitle();
+        }
+    }
+
+    resetReadingState() {
+        this.stableCount = 0;
+        this.isReadingInProgress = false;
+        this.waitingForProbeRemoval = false;
+        this.prevVoltage = null;
+        this.prevResistance = null;
+        this.updateStabilityUI(0);
+        
+        // Only reset text if we're not in the middle of multiple readings
+        if (this.currentReadings.length === 0) {
+            this.stabilityText.textContent = this.isConnected ? 'Waiting for stable reading...' : 'Idle';
+            this.readingNumberSpan.textContent = '-';
         }
     }
 }
