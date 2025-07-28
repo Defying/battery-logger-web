@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Battery Logger WebSerial</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Battery Logger for RC3563</h1>
+            <div class="connection-status">
+                <span id="statusText">Not Connected</span>
+                <button id="connectButton" class="primary-button">Connect Device</button>
+            </div>
+        </header>
+
+        <div class="settings-panel">
+            <div class="setting-group">
+                <label for="cellType">Cell Type:</label>
+                <input type="text" id="cellType" placeholder="e.g., 50S">
+            </div>
+            <div class="setting-group">
+                <label for="averaging">Enable Averaging:</label>
+                <input type="checkbox" id="averaging">
+            </div>
+            <div class="setting-group">
+                <label for="numReadings">Number of Readings:</label>
+                <input type="number" id="numReadings" value="5" min="1" max="20">
+            </div>
+        </div>
+
+        <div class="readings-panel">
+            <div class="current-reading">
+                <h2>Current Reading</h2>
+                <div class="reading-values">
+                    <div class="reading-group">
+                        <span class="label">Cell #:</span>
+                        <span id="cellNumber" class="value">-</span>
+                    </div>
+                    <div class="reading-group">
+                        <span class="label">Voltage:</span>
+                        <span id="voltage" class="value">-</span>
+                    </div>
+                    <div class="reading-group">
+                        <span class="label">ACIR:</span>
+                        <span id="resistance" class="value">-</span>
+                    </div>
+                </div>
+                <div class="stability-indicator">
+                    <div id="stabilityProgress" class="progress-bar">
+                        <div class="progress"></div>
+                    </div>
+                    <span id="stabilityText">Waiting for stable reading...</span>
+                </div>
+            </div>
+
+            <div class="readings-log">
+                <h2>Readings Log</h2>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Cell #</th>
+                                <th>Type</th>
+                                <th>Voltage</th>
+                                <th>ACIR</th>
+                                <th>Time</th>
+                            </tr>
+                        </thead>
+                        <tbody id="readingsLog">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <button id="exportButton" class="secondary-button">Export CSV</button>
+            <button id="clearButton" class="secondary-button">Clear Log</button>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html> 
