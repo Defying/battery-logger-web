@@ -1,5 +1,7 @@
 # Battery Logger WebSerial
 
+yea so all of this is vibecoded thank u claude and grok
+
 A web-based version of the Battery Logger for RC3563, using WebSerial API to communicate with the device directly from your browser.
 
 ## Features
