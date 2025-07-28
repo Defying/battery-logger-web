@@ -1,0 +1,29 @@
+{
+  "name": "battery-logger-web",
+  "version": "1.0.0",
+  "description": "A web-based version of the Battery Logger for RC3563, using WebSerial API to communicate with the device directly from your browser.",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Defying/battery-logger-web.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Defying/battery-logger-web/issues"
+  },
+  "homepage": "https://github.com/Defying/battery-logger-web#readme",
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.2.1",
+    "autoprefixer": "^10.4.17",
+    "postcss": "^8.4.35",
+    "tailwindcss": "^3.4.1",
+    "vite": "^5.1.1"
+  }
+}
