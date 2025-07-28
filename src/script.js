@@ -66,7 +66,7 @@ class BatteryLogger {
         this.initializeEventListeners();
         this.progressBar = document.querySelector('#stabilityProgress .progress');
         this.progressBar.classList.add('waiting');
-        this.stabilityText.textContent = 'Idle';
+        this.stabilityText.textContent = 'Waiting for connection';
         this.updateCurrentValues('-', '-', '');
         this.readingNumberSpan.textContent = '-/-';
         this.updateStabilityUI(0);
@@ -340,7 +340,11 @@ class BatteryLogger {
     updateStabilityUI(progress) {
         // Only update UI if not waiting for probe removal
         if (!this.waitingForProbeRemoval) {
-            if (progress === 0) {
+            if (!this.isConnected) {
+                this.progressBar.style.width = '100%';
+                this.progressBar.classList.add('waiting');
+                this.stabilityText.textContent = 'Waiting for connection';
+            } else if (progress === 0) {
                 this.progressBar.style.width = '100%';
                 this.progressBar.classList.add('waiting');
                 this.stabilityText.textContent = 'Waiting for stable reading...';
@@ -452,7 +456,7 @@ class BatteryLogger {
         
         // Only reset text if we're not in the middle of multiple readings
         if (this.currentReadings.length === 0) {
-            this.stabilityText.textContent = this.isConnected ? 'Waiting for stable reading...' : 'Idle';
+            this.stabilityText.textContent = this.isConnected ? 'Waiting for stable reading...' : 'Waiting for connection';
             this.readingNumberSpan.textContent = '-';
         }
     }
