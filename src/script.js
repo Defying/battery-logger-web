@@ -451,9 +451,20 @@ class BatteryLogger {
 }
 
 // Check if WebSerial is supported
-if ('serial' in navigator) {
+if ('serial' in navigator && window.isSecureContext) {
     const logger = new BatteryLogger();
 } else {
-    alert('WebSerial is not supported in this browser. Please use Chrome or Edge.');
-    document.querySelector('.container').innerHTML = '<h1>WebSerial Not Supported</h1><p>Please use Chrome or Edge browser to access this application.</p>';
+    const errorMessage = !window.isSecureContext 
+        ? 'WebSerial requires a secure context (HTTPS or localhost).'
+        : 'WebSerial is not supported in this browser. Please use a Chromium-based browser (Chrome, Edge, Opera, Brave, etc).';
+    alert(errorMessage);
+    document.querySelector('.container').innerHTML = `
+        <header class="flex justify-between items-center py-6 px-6">
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Battery Logger for RC3563</h1>
+        </header>
+        <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow text-center">
+            <h2 class="text-xl font-semibold text-red-600 dark:text-red-400 mb-4">WebSerial Not Supported</h2>
+            <p class="text-gray-700 dark:text-gray-300">${errorMessage}</p>
+        </div>
+    `;
 } 
