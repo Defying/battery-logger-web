@@ -67,6 +67,13 @@ class BatteryLogger {
         this.progressBar = document.querySelector('#stabilityProgress .progress');
         this.progressBar.classList.add('waiting');
         this.stabilityText.textContent = 'Idle';
+        this.updateCurrentValues('-', '-', '');
+        this.readingNumberSpan.textContent = '-/-';
+        this.updateStabilityUI(0);
+        this.updateReadingsLogTitle();
+        
+        // Add blur class to values initially
+        document.querySelectorAll('.value').forEach(el => el.classList.add('blur-sm', 'select-none'));
     }
 
     initializeEventListeners() {
@@ -349,13 +356,12 @@ class BatteryLogger {
 
     addReadingToTable(reading) {
         const row = document.createElement('tr');
-        row.className = 'text-gray-900 dark:text-gray-200'; // Add dark mode text color
+        row.className = 'bg-white dark:bg-gray-800';
         row.innerHTML = `
-            <td class="px-6 py-4 whitespace-nowrap">${reading.cellNum}</td>
-            <td class="px-6 py-4 whitespace-nowrap">${reading.cellType || 'N/A'}</td>
-            <td class="px-6 py-4 whitespace-nowrap">${reading.voltage}V</td>
-            <td class="px-6 py-4 whitespace-nowrap">${reading.resistance} ${reading.rUnit}</td>
-            <td class="px-6 py-4 whitespace-nowrap">${new Date(reading.timestamp).toLocaleTimeString()}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-300">${reading.cellNum}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-300">${reading.voltage}V</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-300">${reading.resistance} ${reading.rUnit}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-300">${reading.timestamp}</td>
         `;
         this.readingsLog.insertBefore(row, this.readingsLog.firstChild);
     }
@@ -366,11 +372,13 @@ class BatteryLogger {
                 this.connectButton.textContent = 'Disconnect';
                 this.statusText.textContent = 'Connected';
                 this.statusText.className = 'text-green-600 dark:text-green-400';
+                document.querySelectorAll('.value').forEach(el => el.classList.remove('blur-sm', 'select-none'));
                 break;
             case 'disconnected':
-                this.connectButton.textContent = 'Connect Device';
+                this.connectButton.textContent = 'Connect';
                 this.statusText.textContent = 'Not Connected';
                 this.statusText.className = 'text-gray-700 dark:text-gray-300';
+                document.querySelectorAll('.value').forEach(el => el.classList.add('blur-sm', 'select-none'));
                 break;
             case 'error':
                 this.statusText.textContent = message;
