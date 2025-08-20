@@ -12,8 +12,8 @@ class BatteryLogger {
         this.prevVoltage = null;
         this.prevRUnit = null;
         this.requiredStable = 10;
-        this.epsilonResistance = 0.01;
-        this.epsilonVoltage = 0.001;
+        this.epsilonResistance = 0.002;
+        this.epsilonVoltage = 0.01;
         this.isReadingInProgress = false;
         this.lastReadingTime = 0;
         this.COOLDOWN_PERIOD = 3000; // 3 seconds cooldown
@@ -21,6 +21,8 @@ class BatteryLogger {
         this.waitingForProbeRemoval = false;
         this.PROBE_REMOVAL_THRESHOLD = 0.1; // Voltage threshold to detect probe removal
         this.readingLocked = false; // New property to track if we're between multiple readings
+        this.messageBuffer = new Uint8Array(0); // NEW: rolling buffer
+
 
         // UI Elements
         this.connectButton = document.getElementById('connectButton');
@@ -42,7 +44,7 @@ class BatteryLogger {
         this.stabilityText.parentNode.insertBefore(this.readingCounterSpan, this.stabilityText.nextSibling);
         this.readingNumberSpan = document.getElementById('readingNumber');
         this.readingsLogTitle = document.getElementById('readingsLogTitle');
-        
+
         // Update title initially
         this.updateReadingsLogTitle();
 
@@ -71,7 +73,7 @@ class BatteryLogger {
         this.readingNumberSpan.textContent = '-/-';
         this.updateStabilityUI(0);
         this.updateReadingsLogTitle();
-        
+
         // Add blur class to values initially
         document.querySelectorAll('.value').forEach(el => el.classList.add('blur-sm', 'select-none'));
     }
@@ -94,10 +96,10 @@ class BatteryLogger {
         try {
             this.port = await navigator.serial.requestPort();
             await this.port.open({ baudRate: 115200 });
-            
+
             this.reader = this.port.readable.getReader();
             this.isConnected = true;
-            
+
             this.updateUI('connected');
             this.stabilityText.textContent = 'Waiting for stable reading...';
             this.startReading();
@@ -125,10 +127,10 @@ class BatteryLogger {
         while (true) {
             try {
                 const { value, done } = await this.reader.read();
-                if (done) {
-                    break;
+                if (done) break;
+                if (value) {
+                    this.appendToBuffer(value);
                 }
-                this.processData(value);
             } catch (error) {
                 console.error('Read error:', error);
                 this.updateUI('error', 'Connection lost');
@@ -137,41 +139,97 @@ class BatteryLogger {
         }
     }
 
+    appendToBuffer(newData) {
+        // Merge newData into existing buffer
+        const combined = new Uint8Array(this.messageBuffer.length + newData.length);
+        combined.set(this.messageBuffer, 0);
+        combined.set(newData, this.messageBuffer.length);
+        this.messageBuffer = combined;
+
+        // While we have at least one full 10-byte packet, process it
+        while (this.messageBuffer.length >= 10) {
+            const packet = this.messageBuffer.slice(0, 10);
+            this.processPacket(packet);
+            this.messageBuffer = this.messageBuffer.slice(10);
+        }
+    }
+
+    processPacket(packet) {
+        if (packet.length !== 10) return; // safety guard
+
+        const [statusDisp, rRangeCode, rDisp1, rDisp2, rDisp3,
+            signCode, vRangeCode, vDisp1, vDisp2, vDisp3] = packet;
+
+        // --- Resistance decode ---
+        const rDispCode = (statusDisp & 0xF0) >> 4;
+        let resistance = ((rDisp1 & 0xFF) |
+            ((rDisp2 & 0xFF) << 8) |
+            ((rDisp3 & 0xFF) << 16)) / 10000;
+        let rUnit = 'mΩ';
+
+        if (rDispCode === 0x05) {
+            rUnit = 'mΩ';
+        } else if (rDispCode === 0x06) {
+            rUnit = 'mΩ';
+            resistance = 'OL';
+        } else if (rDispCode === 0x09) {
+            rUnit = 'Ω';
+        } else if (rDispCode === 0x0a) {
+            rUnit = 'Ω';
+            resistance = 'OL';
+        }
+
+        // --- Voltage decode ---
+        const vDispCode = statusDisp & 0x0F;
+        let voltage = ((vDisp1 & 0xFF) |
+            ((vDisp2 & 0xFF) << 8) |
+            ((vDisp3 & 0xFF) << 16)) / 10000;
+        voltage = (signCode === 1 ? 1 : -1) * voltage;
+
+        if (vDispCode === 0x08) {
+            voltage = 'OL';
+        }
+
+        this.updateReadings(voltage, resistance, rUnit);
+    }
+
     processData(data) {
-        // Process 10-byte packets
-        if (data.length >= 10) {
-            const packet = new Uint8Array(data);
-            const [statusDisp, rRangeCode, rDisp1, rDisp2, rDisp3, signCode, vRangeCode, vDisp1, vDisp2, vDisp3] = packet;
+        if (!data || data.length < 10) return;
 
-            // Process resistance
-            const rDispCode = (statusDisp & 0xF0) >> 4;
-            // Match Python's struct.unpack('I', bytes + b'\x00')[0] exactly
-            let resistance = ((rDisp1 & 0xFF) | ((rDisp2 & 0xFF) << 8) | ((rDisp3 & 0xFF) << 16)) / 10000;
-            let rUnit = 'mΩ';
+        const packet = data.slice(0, 10); // first 10 bytes
+        const [statusDisp, rRangeCode, rDisp1, rDisp2, rDisp3, signCode, vRangeCode, vDisp1, vDisp2, vDisp3] = packet;
 
-            if (rDispCode === 0x05) {
-                rUnit = 'mΩ';
-            } else if (rDispCode === 0x06) {
-                rUnit = 'mΩ';
-                resistance = 'OL';
-            } else if (rDispCode === 0x09) {
-                rUnit = 'Ω';
-            } else if (rDispCode === 0x0a) {
-                rUnit = 'Ω';
-                resistance = 'OL';
-            }
+        // Process resistance
+        const rDispCode = (statusDisp & 0xF0) >> 4;
+        let resistance = ((rDisp1 & 0xFF) | ((rDisp2 & 0xFF) << 8) | ((rDisp3 & 0xFF) << 16)) / 10000;
+        let rUnit = 'mΩ';
 
-            // Process voltage
-            const vDispCode = statusDisp & 0x0F;
-            // Match Python's struct.unpack('I', bytes + b'\x00')[0] exactly
-            let voltage = ((vDisp1 & 0xFF) | ((vDisp2 & 0xFF) << 8) | ((vDisp3 & 0xFF) << 16)) / 10000;
-            voltage = (signCode === 1 ? 1 : -1) * voltage;
+        if (rDispCode === 0x05) {
+            rUnit = 'mΩ';
+        } else if (rDispCode === 0x06) {
+            rUnit = 'mΩ';
+            resistance = 'OL';
+        } else if (rDispCode === 0x09) {
+            rUnit = 'Ω';
+        } else if (rDispCode === 0x0a) {
+            rUnit = 'Ω';
+            resistance = 'OL';
+        }
 
-            if (vDispCode === 0x08) {
-                voltage = 'OL';
-            }
+        // Process voltage
+        const vDispCode = statusDisp & 0x0F;
+        let voltage = ((vDisp1 & 0xFF) | ((vDisp2 & 0xFF) << 8) | ((vDisp3 & 0xFF) << 16)) / 10000;
+        voltage = (signCode === 1 ? 1 : -1) * voltage;
 
-            this.updateReadings(voltage, resistance, rUnit);
+        if (vDispCode === 0x08) {
+            voltage = 'OL';
+        }
+
+        this.updateReadings(voltage, resistance, rUnit);
+
+        // Recursively handle remaining data
+        if (data.length > 10) {
+            this.processData(data.slice(10));
         }
     }
 
@@ -180,6 +238,7 @@ class BatteryLogger {
         this.updateCurrentValues(voltage, resistance, rUnit);
 
         const now = Date.now();
+        //console.warn(now);
         const isValid = typeof voltage === 'number' && typeof resistance === 'number' && voltage > 0;
 
         // Clear any existing timeout
@@ -241,11 +300,11 @@ class BatteryLogger {
         }
 
         const isStable = this.checkStability(voltage, resistance, rUnit);
-        
+
         if (isStable) {
             this.stableCount++;
             this.updateStabilityUI(this.stableCount / this.requiredStable);
-            
+
             if (this.stableCount === this.requiredStable) {
                 this.recordReading(voltage, resistance, rUnit);
                 this.lastReadingTime = now;
@@ -273,7 +332,7 @@ class BatteryLogger {
         const voltageStable = Math.abs(voltage - this.prevVoltage) < this.epsilonVoltage;
         const resistanceStable = Math.abs(resistance - this.prevResistance) < this.epsilonResistance;
         const unitsMatch = rUnit === this.prevRUnit;
-        
+
         // Always update previous values for better stability tracking
         this.prevVoltage = voltage;
         this.prevResistance = resistance;
@@ -289,12 +348,12 @@ class BatteryLogger {
         }
 
         const numReadings = this.averagingCheckbox.checked ? parseInt(this.numReadingsInput.value) : 1;
-        
+
         this.currentReadings.push({ voltage, resistance });
         const currentReadingNum = this.currentReadings.length;
         this.readingCounterSpan.textContent = `Reading ${currentReadingNum} of ${numReadings}`;
         this.stabilityText.textContent = currentReadingNum === numReadings ? 'Final reading captured' : 'Reading captured';
-        
+
         // Wait for probe removal before next reading
         this.waitingForProbeRemoval = true;
 
@@ -318,7 +377,7 @@ class BatteryLogger {
 
             this.readings.push(reading);
             this.addReadingToTable(reading);
-            
+
             this.cellNum++;
             this.currentReadings = [];
             this.waitingForProbeRemoval = true;
@@ -453,7 +512,7 @@ class BatteryLogger {
         this.prevVoltage = null;
         this.prevResistance = null;
         this.updateStabilityUI(0);
-        
+
         // Only reset text if we're not in the middle of multiple readings
         if (this.currentReadings.length === 0) {
             this.stabilityText.textContent = this.isConnected ? 'Waiting for stable reading...' : 'Waiting for connection';
@@ -466,7 +525,7 @@ class BatteryLogger {
 if ('serial' in navigator && window.isSecureContext) {
     const logger = new BatteryLogger();
 } else {
-    const errorMessage = !window.isSecureContext 
+    const errorMessage = !window.isSecureContext
         ? 'WebSerial requires a secure context (HTTPS or localhost).'
         : 'WebSerial is not supported in this browser. Please use a Chromium-based browser (Chrome, Edge, Opera, Brave, etc).';
     alert(errorMessage);
