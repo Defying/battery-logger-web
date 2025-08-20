@@ -12,8 +12,8 @@ class BatteryLogger {
         this.prevVoltage = null;
         this.prevRUnit = null;
         this.requiredStable = 10;
-        this.epsilonResistance = 0.01;
-        this.epsilonVoltage = 0.001;
+        this.epsilonResistance = 0.002;
+        this.epsilonVoltage = 0.01;
         this.isReadingInProgress = false;
         this.lastReadingTime = 0;
         this.COOLDOWN_PERIOD = 3000; // 3 seconds cooldown
@@ -21,6 +21,8 @@ class BatteryLogger {
         this.waitingForProbeRemoval = false;
         this.PROBE_REMOVAL_THRESHOLD = 0.1; // Voltage threshold to detect probe removal
         this.readingLocked = false; // New property to track if we're between multiple readings
+        this.messageBuffer = new Uint8Array(0); // NEW: rolling buffer
+
 
         // UI Elements
         this.connectButton = document.getElementById('connectButton');
@@ -125,10 +127,10 @@ class BatteryLogger {
         while (true) {
             try {
                 const { value, done } = await this.reader.read();
-                if (done) {
-                    break;
+                if (done) break;
+                if (value) {
+                    this.appendToBuffer(value);
                 }
-                this.processData(value);
             } catch (error) {
                 console.error('Read error:', error);
                 this.updateUI('error', 'Connection lost');
@@ -137,49 +139,106 @@ class BatteryLogger {
         }
     }
 
-    processData(data) {
-        // Process 10-byte packets
-        if (data.length >= 10) {
-            const packet = new Uint8Array(data);
-            const [statusDisp, rRangeCode, rDisp1, rDisp2, rDisp3, signCode, vRangeCode, vDisp1, vDisp2, vDisp3] = packet;
+        appendToBuffer(newData) {
+        // Merge newData into existing buffer
+        const combined = new Uint8Array(this.messageBuffer.length + newData.length);
+        combined.set(this.messageBuffer, 0);
+        combined.set(newData, this.messageBuffer.length);
+        this.messageBuffer = combined;
 
-            // Process resistance
-            const rDispCode = (statusDisp & 0xF0) >> 4;
-            // Match Python's struct.unpack('I', bytes + b'\x00')[0] exactly
-            let resistance = ((rDisp1 & 0xFF) | ((rDisp2 & 0xFF) << 8) | ((rDisp3 & 0xFF) << 16)) / 10000;
-            let rUnit = 'mΩ';
-
-            if (rDispCode === 0x05) {
-                rUnit = 'mΩ';
-            } else if (rDispCode === 0x06) {
-                rUnit = 'mΩ';
-                resistance = 'OL';
-            } else if (rDispCode === 0x09) {
-                rUnit = 'Ω';
-            } else if (rDispCode === 0x0a) {
-                rUnit = 'Ω';
-                resistance = 'OL';
-            }
-
-            // Process voltage
-            const vDispCode = statusDisp & 0x0F;
-            // Match Python's struct.unpack('I', bytes + b'\x00')[0] exactly
-            let voltage = ((vDisp1 & 0xFF) | ((vDisp2 & 0xFF) << 8) | ((vDisp3 & 0xFF) << 16)) / 10000;
-            voltage = (signCode === 1 ? 1 : -1) * voltage;
-
-            if (vDispCode === 0x08) {
-                voltage = 'OL';
-            }
-
-            this.updateReadings(voltage, resistance, rUnit);
+        // While we have at least one full 10-byte packet, process it
+        while (this.messageBuffer.length >= 10) {
+            const packet = this.messageBuffer.slice(0, 10);
+            this.processPacket(packet);
+            this.messageBuffer = this.messageBuffer.slice(10);
         }
     }
+
+processPacket(packet) {
+        if (packet.length !== 10) return; // safety guard
+
+        const [statusDisp, rRangeCode, rDisp1, rDisp2, rDisp3,
+               signCode, vRangeCode, vDisp1, vDisp2, vDisp3] = packet;
+
+        // --- Resistance decode ---
+        const rDispCode = (statusDisp & 0xF0) >> 4;
+        let resistance = ((rDisp1 & 0xFF) |
+                          ((rDisp2 & 0xFF) << 8) |
+                          ((rDisp3 & 0xFF) << 16)) / 10000;
+        let rUnit = 'mΩ';
+
+        if (rDispCode === 0x05) {
+            rUnit = 'mΩ';
+        } else if (rDispCode === 0x06) {
+            rUnit = 'mΩ';
+            resistance = 'OL';
+        } else if (rDispCode === 0x09) {
+            rUnit = 'Ω';
+        } else if (rDispCode === 0x0a) {
+            rUnit = 'Ω';
+            resistance = 'OL';
+        }
+
+        // --- Voltage decode ---
+        const vDispCode = statusDisp & 0x0F;
+        let voltage = ((vDisp1 & 0xFF) |
+                       ((vDisp2 & 0xFF) << 8) |
+                       ((vDisp3 & 0xFF) << 16)) / 10000;
+        voltage = (signCode === 1 ? 1 : -1) * voltage;
+
+        if (vDispCode === 0x08) {
+            voltage = 'OL';
+        }
+
+        this.updateReadings(voltage, resistance, rUnit);
+    }
+
+processData(data) {
+    if (!data || data.length < 10) return;
+
+    const packet = data.slice(0, 10); // first 10 bytes
+    const [statusDisp, rRangeCode, rDisp1, rDisp2, rDisp3, signCode, vRangeCode, vDisp1, vDisp2, vDisp3] = packet;
+
+    // Process resistance
+    const rDispCode = (statusDisp & 0xF0) >> 4;
+    let resistance = ((rDisp1 & 0xFF) | ((rDisp2 & 0xFF) << 8) | ((rDisp3 & 0xFF) << 16)) / 10000;
+    let rUnit = 'mΩ';
+
+    if (rDispCode === 0x05) {
+        rUnit = 'mΩ';
+    } else if (rDispCode === 0x06) {
+        rUnit = 'mΩ';
+        resistance = 'OL';
+    } else if (rDispCode === 0x09) {
+        rUnit = 'Ω';
+    } else if (rDispCode === 0x0a) {
+        rUnit = 'Ω';
+        resistance = 'OL';
+    }
+
+    // Process voltage
+    const vDispCode = statusDisp & 0x0F;
+    let voltage = ((vDisp1 & 0xFF) | ((vDisp2 & 0xFF) << 8) | ((vDisp3 & 0xFF) << 16)) / 10000;
+    voltage = (signCode === 1 ? 1 : -1) * voltage;
+
+    if (vDispCode === 0x08) {
+        voltage = 'OL';
+    }
+
+    this.updateReadings(voltage, resistance, rUnit);
+
+    // Recursively handle remaining data
+    if (data.length > 10) {
+        this.processData(data.slice(10));
+    }
+}
 
     updateReadings(voltage, resistance, rUnit) {
         // Always update current values for real-time display
         this.updateCurrentValues(voltage, resistance, rUnit);
 
         const now = Date.now();
+        //console.warn(now);
         const isValid = typeof voltage === 'number' && typeof resistance === 'number' && voltage > 0;
 
         // Clear any existing timeout
