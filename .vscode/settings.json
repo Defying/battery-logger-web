@@ -1,0 +1,18 @@
+{
+    "files.associations": {
+    },
+    "editor.tabSize": 2,
+    "files.eol": "\n",
+    "files.exclude": {
+    },
+    "editor.autoIndent": "full",
+    "editor.wordBasedSuggestions": "off",
+    "editor.suggest.insertMode": "replace",
+    "editor.semanticHighlighting.enabled": true,
+    "editor.foldingStrategy": "auto",
+    "editor.formatOnSaveMode": "file",
+    "editor.formatOnSave": true,
+    "editor.wrappingStrategy": "advanced",
+    "editor.formatOnPaste": false
+  }
+  
