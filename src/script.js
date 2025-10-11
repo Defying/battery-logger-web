@@ -12,8 +12,8 @@ class BatteryLogger {
     this.prevVoltage = null;
     this.prevRUnit = null;
     this.requiredStable = 10;
-    this.epsilonResistance = 0.01;
-    this.epsilonVoltage = 0.001;
+    this.epsilonResistance = 0.002;
+    this.epsilonVoltage = 0.01;
     this.isReadingInProgress = false;
     this.lastReadingTime = 0;
     this.COOLDOWN_PERIOD = 3000; // 3 seconds cooldown
@@ -21,6 +21,7 @@ class BatteryLogger {
     this.waitingForProbeRemoval = false;
     this.PROBE_REMOVAL_THRESHOLD = 0.1; // Voltage threshold to detect probe removal
     this.readingLocked = false; // New property to track if we're between multiple readings
+    this.messageBuffer = new Uint8Array(0); // NEW: rolling buffer
 
     // UI Elements
     this.connectButton = document.getElementById("connectButton");
@@ -133,7 +134,9 @@ class BatteryLogger {
         if (done) {
           break;
         }
-        this.processData(value);
+        if (value) {
+          this.appendToBuffer(value);
+        }
       } catch (error) {
         console.error("Read error:", error);
         this.updateUI("error", "Connection lost");
@@ -142,56 +145,126 @@ class BatteryLogger {
     }
   }
 
+  appendToBuffer(newData) {
+    // Merge newData into existing buffer
+    const combined = new Uint8Array(this.messageBuffer.length + newData.length);
+    combined.set(this.messageBuffer, 0);
+    combined.set(newData, this.messageBuffer.length);
+    this.messageBuffer = combined;
+
+    // While we have at least one full 10-byte packet, process it
+    while (this.messageBuffer.length >= 10) {
+      const packet = this.messageBuffer.slice(0, 10);
+      this.processPacket(packet);
+      this.messageBuffer = this.messageBuffer.slice(10);
+    }
+  }
+
+  processPacket(packet) {
+    if (packet.length !== 10) {
+      return; // safety guard
+    }
+
+    const [
+      statusDisp,
+      rRangeCode,
+      rDisp1,
+      rDisp2,
+      rDisp3,
+      signCode,
+      vRangeCode,
+      vDisp1,
+      vDisp2,
+      vDisp3,
+    ] = packet;
+
+    // --- Resistance decode ---
+    const rDispCode = (statusDisp & 0xf0) >> 4;
+    let resistance =
+      ((rDisp1 & 0xff) | ((rDisp2 & 0xff) << 8) | ((rDisp3 & 0xff) << 16)) /
+      10000;
+    let rUnit = "mΩ";
+
+    if (rDispCode === 0x05) {
+      rUnit = "mΩ";
+    } else if (rDispCode === 0x06) {
+      rUnit = "mΩ";
+      resistance = "OL";
+    } else if (rDispCode === 0x09) {
+      rUnit = "Ω";
+    } else if (rDispCode === 0x0a) {
+      rUnit = "Ω";
+      resistance = "OL";
+    }
+
+    // --- Voltage decode ---
+    const vDispCode = statusDisp & 0x0f;
+    let voltage =
+      ((vDisp1 & 0xff) | ((vDisp2 & 0xff) << 8) | ((vDisp3 & 0xff) << 16)) /
+      10000;
+    voltage = (signCode === 1 ? 1 : -1) * voltage;
+
+    if (vDispCode === 0x08) {
+      voltage = "OL";
+    }
+
+    this.updateReadings(voltage, resistance, rUnit);
+  }
+
   processData(data) {
-    // Process 10-byte packets
-    if (data.length >= 10) {
-      const packet = new Uint8Array(data);
-      const [
-        statusDisp,
-        rRangeCode,
-        rDisp1,
-        rDisp2,
-        rDisp3,
-        signCode,
-        vRangeCode,
-        vDisp1,
-        vDisp2,
-        vDisp3,
-      ] = packet;
+    if (!data || data.length < 10) {
+      return;
+    }
 
-      // Process resistance
-      const rDispCode = (statusDisp & 0xf0) >> 4;
-      // Match Python's struct.unpack('I', bytes + b'\x00')[0] exactly
-      let resistance =
-        ((rDisp1 & 0xff) | ((rDisp2 & 0xff) << 8) | ((rDisp3 & 0xff) << 16)) /
-        10000;
-      let rUnit = "mΩ";
+    const packet = data.slice(0, 10); // first 10 bytes
+    const [
+      statusDisp,
+      rRangeCode,
+      rDisp1,
+      rDisp2,
+      rDisp3,
+      signCode,
+      vRangeCode,
+      vDisp1,
+      vDisp2,
+      vDisp3,
+    ] = packet;
 
-      if (rDispCode === 0x05) {
-        rUnit = "mΩ";
-      } else if (rDispCode === 0x06) {
-        rUnit = "mΩ";
-        resistance = "OL";
-      } else if (rDispCode === 0x09) {
-        rUnit = "Ω";
-      } else if (rDispCode === 0x0a) {
-        rUnit = "Ω";
-        resistance = "OL";
-      }
+    // Process resistance
+    const rDispCode = (statusDisp & 0xf0) >> 4;
+    let resistance =
+      ((rDisp1 & 0xff) | ((rDisp2 & 0xff) << 8) | ((rDisp3 & 0xff) << 16)) /
+      10000;
+    let rUnit = "mΩ";
 
-      // Process voltage
-      const vDispCode = statusDisp & 0x0f;
-      // Match Python's struct.unpack('I', bytes + b'\x00')[0] exactly
-      let voltage =
-        ((vDisp1 & 0xff) | ((vDisp2 & 0xff) << 8) | ((vDisp3 & 0xff) << 16)) /
-        10000;
-      voltage = (signCode === 1 ? 1 : -1) * voltage;
+    if (rDispCode === 0x05) {
+      rUnit = "mΩ";
+    } else if (rDispCode === 0x06) {
+      rUnit = "mΩ";
+      resistance = "OL";
+    } else if (rDispCode === 0x09) {
+      rUnit = "Ω";
+    } else if (rDispCode === 0x0a) {
+      rUnit = "Ω";
+      resistance = "OL";
+    }
 
-      if (vDispCode === 0x08) {
-        voltage = "OL";
-      }
+    // Process voltage
+    const vDispCode = statusDisp & 0x0f;
+    let voltage =
+      ((vDisp1 & 0xff) | ((vDisp2 & 0xff) << 8) | ((vDisp3 & 0xff) << 16)) /
+      10000;
+    voltage = (signCode === 1 ? 1 : -1) * voltage;
 
-      this.updateReadings(voltage, resistance, rUnit);
+    if (vDispCode === 0x08) {
+      voltage = "OL";
+    }
+
+    this.updateReadings(voltage, resistance, rUnit);
+
+    // Recursively handle remaining data
+    if (data.length > 10) {
+      this.processData(data.slice(10));
     }
   }
 
