@@ -88,6 +88,28 @@ class BatteryLogger {
     this.clearButton.addEventListener("click", () => this.clearLog());
   }
 
+  playBeep() {
+    try {
+      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+
+      oscillator.frequency.value = 800; // Frequency in Hz
+      oscillator.type = "sine"; // Sine wave for a pure tone
+
+      gainNode.gain.setValueAtTime(0.15, audioContext.currentTime); // Quiet volume (0.15)
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.15);
+
+      oscillator.start(audioContext.currentTime);
+      oscillator.stop(audioContext.currentTime + 0.15); // 150ms beep
+    } catch (error) {
+      console.log("Audio not available:", error);
+    }
+  }
+
   async toggleConnection() {
     if (this.isConnected) {
       await this.disconnect();
@@ -437,6 +459,7 @@ class BatteryLogger {
 
       this.readings.push(reading);
       this.addReadingToTable(reading);
+      this.playBeep(); // Play beep when reading is complete
 
       this.cellNum++;
       this.currentReadings = [];
