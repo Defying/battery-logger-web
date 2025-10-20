@@ -29,6 +29,7 @@ class BatteryLogger {
     this.cellTypeInput = document.getElementById("cellType");
     this.customCellTypeInput = document.getElementById("customCellType");
     this.averagingCheckbox = document.getElementById("averaging");
+    this.enableSoundCheckbox = document.getElementById("enableSound");
     this.numReadingsInput = document.getElementById("numReadings");
     this.cellNumberSpan = document.getElementById("cellNumber");
     this.voltageSpan = document.getElementById("voltage");
@@ -89,6 +90,11 @@ class BatteryLogger {
   }
 
   playBeep() {
+    // Only play beep if sound is enabled
+    if (!this.enableSoundCheckbox.checked) {
+      return;
+    }
+
     try {
       const audioContext = new (window.AudioContext || window.webkitAudioContext)();
       const oscillator = audioContext.createOscillator();
@@ -432,6 +438,9 @@ class BatteryLogger {
         ? "Final reading captured"
         : "Reading captured";
 
+    // Play beep after each reading is captured
+    this.playBeep();
+
     // Wait for probe removal before next reading
     this.waitingForProbeRemoval = true;
 
@@ -459,7 +468,6 @@ class BatteryLogger {
 
       this.readings.push(reading);
       this.addReadingToTable(reading);
-      this.playBeep(); // Play beep when reading is complete
 
       this.cellNum++;
       this.currentReadings = [];
