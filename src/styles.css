@@ -58,6 +58,13 @@ h1 {
     font-weight: 500;
     cursor: pointer;
     transition: all 0.2s ease;
+    outline: none;
+}
+
+.primary-button:focus, .secondary-button:focus,
+.primary-button:focus-visible, .secondary-button:focus-visible {
+    outline: none;
+    box-shadow: none;
 }
 
 .primary-button {
