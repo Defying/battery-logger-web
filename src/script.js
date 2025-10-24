@@ -50,6 +50,8 @@ class BatteryLogger {
     );
     this.readingNumberSpan = document.getElementById("readingNumber");
     this.readingsLogTitle = document.getElementById("readingsLogTitle");
+    this.currentMeasurementsPanel = document.getElementById("currentMeasurementsPanel");
+    this.measurementsContainer = document.getElementById("measurementsContainer");
 
     // Update title initially
     this.updateReadingsLogTitle();
@@ -374,6 +376,11 @@ class BatteryLogger {
       this.prevVoltage = null;
       this.prevResistance = null;
       this.updateStabilityUI(0);
+
+      // Initialize measurements display if starting a new cell
+      if (this.currentReadings.length === 0) {
+        this.updateMeasurementsDisplay();
+      }
     }
 
     const isStable = this.checkStability(voltage, resistance, rUnit);
@@ -430,13 +437,16 @@ class BatteryLogger {
       ? parseInt(this.numReadingsInput.value)
       : 1;
 
-    this.currentReadings.push({ voltage, resistance });
+    this.currentReadings.push({ voltage, resistance, rUnit });
     const currentReadingNum = this.currentReadings.length;
     this.readingCounterSpan.textContent = `Reading ${currentReadingNum} of ${numReadings}`;
     this.stabilityText.textContent =
       currentReadingNum === numReadings
         ? "Final reading captured"
         : "Reading captured";
+
+    // Update the measurements display
+    this.updateMeasurementsDisplay();
 
     // Play beep after each reading is captured
     this.playBeep();
@@ -475,6 +485,9 @@ class BatteryLogger {
       this.stabilityText.textContent =
         "Reading saved. Move probes to next cell.";
       this.readingCounterSpan.textContent = "";
+
+      // Clear measurements display for next cell
+      this.clearMeasurementsDisplay();
     } else {
       this.stabilityText.textContent = "Remove probes before next reading";
     }
@@ -607,6 +620,7 @@ class BatteryLogger {
         ? "Waiting for stable reading..."
         : "Waiting for connection";
       this.updateReadingsLogTitle();
+      this.clearMeasurementsDisplay();
     }
   }
 
@@ -625,6 +639,95 @@ class BatteryLogger {
         : "Waiting for connection";
       this.readingNumberSpan.textContent = "-";
     }
+  }
+
+  updateMeasurementsDisplay() {
+    const numReadings = this.averagingCheckbox.checked
+      ? parseInt(this.numReadingsInput.value)
+      : 1;
+
+    // Show panel if we have averaging enabled and multiple readings
+    if (numReadings > 1) {
+      this.currentMeasurementsPanel.style.display = 'block';
+
+      // Clear and rebuild the container
+      this.measurementsContainer.innerHTML = '';
+
+      for (let i = 0; i < numReadings; i++) {
+        const measurementDiv = document.createElement('div');
+        measurementDiv.className = 'measurement-item bg-gray-50 dark:bg-gray-700 p-4 rounded-lg flex items-center justify-between';
+
+        const reading = this.currentReadings[i];
+        const isEmpty = !reading;
+
+        measurementDiv.innerHTML = `
+          <div class="flex items-center gap-4 flex-1">
+            <span class="font-medium text-gray-700 dark:text-gray-300">Reading ${i + 1}:</span>
+            ${isEmpty ?
+            '<span class="text-gray-400 dark:text-gray-500 italic">Waiting...</span>' :
+            `<span class="text-gray-900 dark:text-white">
+                Voltage: <strong>${reading.voltage.toFixed(4)}V</strong> | 
+                ACIR: <strong>${reading.resistance.toFixed(4)} ${reading.rUnit}</strong>
+              </span>`
+          }
+          </div>
+          ${!isEmpty ?
+            `<button 
+              class="delete-reading text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 font-bold text-xl px-3 py-1 rounded hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors"
+              data-index="${i}"
+              title="Delete this reading"
+            >✕</button>` :
+            ''
+          }
+        `;
+
+        this.measurementsContainer.appendChild(measurementDiv);
+
+        // Add delete listener if button exists
+        if (!isEmpty) {
+          const deleteBtn = measurementDiv.querySelector('.delete-reading');
+          deleteBtn.addEventListener('click', () => this.deleteMeasurement(i));
+        }
+      }
+    } else {
+      this.currentMeasurementsPanel.style.display = 'none';
+    }
+  }
+
+  clearMeasurementsDisplay() {
+    this.measurementsContainer.innerHTML = '';
+    this.currentMeasurementsPanel.style.display = 'none';
+  }
+
+  deleteMeasurement(index) {
+    if (index < 0 || index >= this.currentReadings.length) {
+      return;
+    }
+
+    // Remove the measurement from the array
+    this.currentReadings.splice(index, 1);
+
+    // Update the display
+    this.updateMeasurementsDisplay();
+
+    // Update the reading counter
+    const numReadings = this.averagingCheckbox.checked
+      ? parseInt(this.numReadingsInput.value)
+      : 1;
+    this.readingCounterSpan.textContent = `Reading ${this.currentReadings.length} of ${numReadings}`;
+
+    // Update status
+    if (this.currentReadings.length === 0) {
+      this.stabilityText.textContent = "Ready for next reading";
+    } else {
+      this.stabilityText.textContent = "Reading deleted. Ready for next reading";
+    }
+
+    // Reset waiting state so we can take another reading
+    this.waitingForProbeRemoval = false;
+    this.isReadingInProgress = false;
+    this.stableCount = 0;
+    this.updateStabilityUI(0);
   }
 }
 
