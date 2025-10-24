@@ -7,23 +7,78 @@
 
 .progress-bar .progress.waiting {
   width: 100%;
-  background: linear-gradient(
-    90deg,
-    rgba(212, 148, 66, 1) 0%,
-    rgba(196, 81, 43, 1) 25%,
-    rgba(106, 0, 255, 1) 50%,
-    rgba(56, 146, 214, 1) 75%,
-    rgba(212, 148, 66, 1) 100%
-  );
+  background: linear-gradient(90deg,
+      rgba(212, 148, 66, 1) 0%,
+      rgba(196, 81, 43, 1) 25%,
+      rgba(106, 0, 255, 1) 50%,
+      rgba(56, 146, 214, 1) 75%,
+      rgba(212, 148, 66, 1) 100%);
   background-size: 150% 100%;
   animation: moveGradient 12s linear infinite;
 }
 
 @keyframes moveGradient {
-  0%, 100% {
+
+  0%,
+  100% {
     background-position: 0% 50%;
   }
+
   50% {
     background-position: 150% 50%;
   }
-} 
+}
+
+/* Toast Notifications */
+.toast {
+  min-width: 300px;
+  padding: 16px 20px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  animation: slideIn 0.3s ease-out;
+}
+
+.dark .toast {
+  background: #1f2937;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+}
+
+.toast.success {
+  border-left: 4px solid #10b981;
+}
+
+.toast.error {
+  border-left: 4px solid #ef4444;
+}
+
+.toast.info {
+  border-left: 4px solid #3b82f6;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(400px);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideOut {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+
+  to {
+    transform: translateX(400px);
+    opacity: 0;
+  }
+}
