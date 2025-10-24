@@ -542,8 +542,37 @@ class BatteryLogger {
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-300">${reading.voltage}V</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-300">${reading.resistance} ${reading.rUnit}</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-300">${reading.timestamp}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-right">
+                <button class="reload-cell-btn text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 font-medium" data-cell-num="${reading.cellNum}">
+                    ↻ Retest
+                </button>
+            </td>
         `;
-    this.readingsLog.insertBefore(row, this.readingsLog.firstChild);
+
+    // Add event listener to the reload button
+    const reloadBtn = row.querySelector('.reload-cell-btn');
+    reloadBtn.addEventListener('click', () => this.reloadCell(reading.cellNum));
+
+    // Find the correct position to insert (descending order by cell number)
+    const rows = Array.from(this.readingsLog.querySelectorAll('tr'));
+    let insertBeforeRow = null;
+
+    for (const existingRow of rows) {
+      const cellNumCell = existingRow.querySelector('td:first-child');
+      if (cellNumCell) {
+        const existingCellNum = parseInt(cellNumCell.textContent);
+        if (existingCellNum < reading.cellNum) {
+          insertBeforeRow = existingRow;
+          break;
+        }
+      }
+    }
+
+    if (insertBeforeRow) {
+      this.readingsLog.insertBefore(row, insertBeforeRow);
+    } else {
+      this.readingsLog.appendChild(row);
+    }
   }
 
   updateUI(state, message = "") {
@@ -606,10 +635,10 @@ class BatteryLogger {
       try {
         const csvContent = e.target.result;
         const lines = csvContent.split("\n");
-        
+
         // Skip header row
         const dataLines = lines.slice(1).filter(line => line.trim());
-        
+
         if (dataLines.length === 0) {
           alert("No data found in CSV file");
           return;
@@ -618,7 +647,7 @@ class BatteryLogger {
         // Clear existing data
         this.readings = [];
         this.readingsLog.innerHTML = "";
-        
+
         // Parse and import each row
         let maxCellNum = 0;
         dataLines.forEach((line) => {
@@ -643,7 +672,7 @@ class BatteryLogger {
 
             this.readings.push(reading);
             this.addReadingToTable(reading);
-            
+
             if (cellNum > maxCellNum) {
               maxCellNum = cellNum;
             }
@@ -654,13 +683,13 @@ class BatteryLogger {
         this.cellNum = maxCellNum + 1;
         this.updateCurrentValues("-", "-", "");
         this.readingNumberSpan.textContent = "-/-";
-        
+
         alert(`Successfully imported ${dataLines.length} readings`);
       } catch (error) {
         console.error("Error importing CSV:", error);
         alert("Error importing CSV file. Please make sure it's in the correct format.");
       }
-      
+
       // Reset file input
       event.target.value = "";
     };
@@ -699,6 +728,43 @@ class BatteryLogger {
       this.updateReadingsLogTitle();
       this.clearMeasurementsDisplay();
     }
+  }
+
+  reloadCell(cellNum) {
+    if (!confirm(`Are you sure you want to reload Cell #${cellNum}? This will delete the current reading.`)) {
+      return;
+    }
+
+    // Remove the reading from the array
+    const readingIndex = this.readings.findIndex(r => r.cellNum === cellNum);
+    if (readingIndex !== -1) {
+      this.readings.splice(readingIndex, 1);
+    }
+
+    // Remove the row from the table
+    const rows = this.readingsLog.querySelectorAll('tr');
+    rows.forEach(row => {
+      const cellNumCell = row.querySelector('td:first-child');
+      if (cellNumCell && parseInt(cellNumCell.textContent) === cellNum) {
+        row.remove();
+      }
+    });
+
+    // Set up for reloading this cell
+    this.cellNum = cellNum;
+    this.currentReadings = [];
+    this.stableCount = 0;
+    this.isReadingInProgress = false;
+    this.waitingForProbeRemoval = false;
+    this.lastReadingTime = 0;
+    this.updateCurrentValues("-", "-", "");
+    this.readingNumberSpan.textContent = this.isConnected ? "1/" + (this.averagingCheckbox.checked ? parseInt(this.numReadingsInput.value) : 1) : "-/-";
+    this.updateStabilityUI(0);
+    this.readingCounterSpan.textContent = "";
+    this.stabilityText.textContent = this.isConnected
+      ? "Ready to measure cell #" + cellNum
+      : "Waiting for connection";
+    this.clearMeasurementsDisplay();
   }
 
   resetReadingState() {
