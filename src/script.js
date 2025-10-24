@@ -1,3 +1,26 @@
+// Toast Notification System
+function showToast(message, type = 'info') {
+  const container = document.getElementById('toastContainer');
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+
+  const icon = type === 'success' ? '✓' : type === 'error' ? '✕' : 'ℹ';
+  const iconBg = type === 'success' ? 'bg-green-500' : type === 'error' ? 'bg-red-500' : 'bg-blue-500';
+
+  toast.innerHTML = `
+    <div class="${iconBg} text-white w-6 h-6 rounded-full flex items-center justify-center font-bold text-sm flex-shrink-0">${icon}</div>
+    <span class="text-gray-900 dark:text-gray-100 flex-1">${message}</span>
+  `;
+
+  container.appendChild(toast);
+
+  // Auto remove after 3 seconds
+  setTimeout(() => {
+    toast.style.animation = 'slideOut 0.3s ease-in';
+    setTimeout(() => toast.remove(), 300);
+  }, 3000);
+}
+
 class BatteryLogger {
   constructor() {
     this.port = null;
@@ -54,6 +77,7 @@ class BatteryLogger {
     this.readingsLogTitle = document.getElementById("readingsLogTitle");
     this.currentMeasurementsPanel = document.getElementById("currentMeasurementsPanel");
     this.measurementsContainer = document.getElementById("measurementsContainer");
+    this.usbIcon = document.getElementById("usbIcon");
 
     // Update title initially
     this.updateReadingsLogTitle();
@@ -581,11 +605,13 @@ class BatteryLogger {
         this.connectButton.textContent = "Disconnect";
         this.statusText.textContent = "Connected";
         this.statusText.className = "text-green-600 dark:text-green-400";
+        showToast("Connected successfully", "success");
         break;
       case "disconnected":
         this.connectButton.textContent = "Connect";
         this.statusText.textContent = "Not Connected";
         this.statusText.className = "text-gray-700 dark:text-gray-300";
+        showToast("Disconnected", "info");
         break;
       case "error":
         this.statusText.textContent = message;
@@ -596,7 +622,7 @@ class BatteryLogger {
 
   exportToCSV() {
     if (this.readings.length === 0) {
-      alert("No readings to export");
+      showToast("No readings to export", "error");
       return;
     }
 
@@ -640,7 +666,7 @@ class BatteryLogger {
         const dataLines = lines.slice(1).filter(line => line.trim());
 
         if (dataLines.length === 0) {
-          alert("No data found in CSV file");
+          showToast("No data found in CSV file", "error");
           return;
         }
 
@@ -684,10 +710,10 @@ class BatteryLogger {
         this.updateCurrentValues("-", "-", "");
         this.readingNumberSpan.textContent = "-/-";
 
-        alert(`Successfully imported ${dataLines.length} readings`);
+        showToast(`Successfully imported ${dataLines.length} readings`, "success");
       } catch (error) {
         console.error("Error importing CSV:", error);
-        alert("Error importing CSV file. Please make sure it's in the correct format.");
+        showToast("Error importing CSV file. Please make sure it's in the correct format.", "error");
       }
 
       // Reset file input
@@ -881,7 +907,7 @@ if ("serial" in navigator && window.isSecureContext) {
   const errorMessage = !window.isSecureContext
     ? "WebSerial requires a secure context (HTTPS or localhost)."
     : "WebSerial is not supported in this browser. Please use a Chromium-based browser (Chrome, Edge, Opera, Brave, etc).";
-  alert(errorMessage);
+  showToast(errorMessage, "error");
   document.querySelector(".container").innerHTML = `
         <header class="flex justify-between items-center py-6 px-6">
             <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Battery Logger for RC3563</h1>

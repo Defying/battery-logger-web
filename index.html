@@ -13,7 +13,7 @@
     <link rel="icon" href="/favicon.png" type="image/png">
 </head>
 
-<body class="bg-white dark:bg-gray-900 transition-colors duration-200 font-['Open_Sans']">
+<body class="bg-white transition-colors duration-200 font-['Open_Sans']" style="background-color: #121212;">
     <div class="container mx-auto px-4 max-w-4xl">
         <header class="flex justify-between items-center py-6 px-6">
             <div class="flex items-center gap-4">
@@ -22,9 +22,12 @@
                 <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Battery Logger for RC3563</h1>
             </div>
             <div class="connection-status flex items-center gap-4">
-                <span id="statusText" class="text-gray-700 dark:text-gray-300">Not Connected</span>
-                <button id="connectButton"
-                    class="primary-button bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-full">Connect</button>
+                <div class="flex items-center gap-2">
+                    <img id="usbIcon" src="./USB_icon.svg" alt="USB" class="h-7 w-7 dark:invert">
+                    <span id="statusText" class="text-gray-700 dark:text-gray-300">Not Connected</span>
+                </div>
+                <button id="connectButton" class="primary-button text-white px-6 py-2 rounded-full"
+                    style="background-color: #8c5fe9;">Connect</button>
             </div>
         </header>
 
@@ -51,13 +54,13 @@
                         class="mt-2 block w-full rounded border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white px-3 py-2 hidden">
                 </div>
                 <div class="setting-group flex flex-col items-center justify-end">
-                    <label for="averaging" class="block text-gray-700 dark:text-gray-300">Averaging</label>
-                    <input type="checkbox" id="averaging"
+                    <label for="enableSound" class="block text-gray-700 dark:text-gray-300">Sound</label>
+                    <input type="checkbox" id="enableSound"
                         class="mt-3 w-6 h-6 rounded border-gray-300 dark:border-gray-600 text-blue-500" checked>
                 </div>
                 <div class="setting-group flex flex-col items-center justify-end">
-                    <label for="enableSound" class="block text-gray-700 dark:text-gray-300">Sound</label>
-                    <input type="checkbox" id="enableSound"
+                    <label for="averaging" class="block text-gray-700 dark:text-gray-300">Averaging</label>
+                    <input type="checkbox" id="averaging"
                         class="mt-3 w-6 h-6 rounded border-gray-300 dark:border-gray-600 text-blue-500" checked>
                 </div>
                 <div class="setting-group">
@@ -150,6 +153,9 @@
                 class="secondary-button bg-red-500 hover:bg-red-600 text-white px-6 py-2 rounded-full">Clear</button>
         </div>
     </div>
+
+    <!-- Toast Notification Container -->
+    <div id="toastContainer" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2"></div>
 
     <script type="module" src="./src/script.js"></script>
     <script>
