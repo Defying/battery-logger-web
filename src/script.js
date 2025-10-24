@@ -603,22 +603,19 @@ class BatteryLogger {
     const buttonText = this.connectButton.querySelector("span");
     switch (state) {
       case "connected":
-        buttonText.textContent = "Disconnect";
-        this.statusText.textContent = "Connected";
-        this.statusText.className = "text-green-600 dark:text-green-400";
+        buttonText.textContent = "Connected";
         this.usbIcon.classList.remove("hidden");
+        this.connectButton.classList.add("connected-glow");
         showToast("Connected successfully", "success");
         break;
       case "disconnected":
         buttonText.textContent = "Connect";
-        this.statusText.textContent = "Not Connected";
-        this.statusText.className = "text-gray-700 dark:text-gray-300";
         this.usbIcon.classList.add("hidden");
+        this.connectButton.classList.remove("connected-glow");
         showToast("Disconnected", "info");
         break;
       case "error":
-        this.statusText.textContent = message;
-        this.statusText.className = "text-red-600 dark:text-red-400";
+        showToast(message, "error");
         break;
     }
   }

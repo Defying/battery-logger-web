@@ -50,7 +50,8 @@ h1 {
     font-weight: 500;
 }
 
-.primary-button, .secondary-button {
+.primary-button,
+.secondary-button {
     padding: 8px 16px;
     border: none;
     border-radius: 4px;
@@ -61,8 +62,10 @@ h1 {
     outline: none;
 }
 
-.primary-button:focus, .secondary-button:focus,
-.primary-button:focus-visible, .secondary-button:focus-visible {
+.primary-button:focus,
+.secondary-button:focus,
+.primary-button:focus-visible,
+.secondary-button:focus-visible {
     outline: none;
     box-shadow: none;
 }
@@ -74,6 +77,26 @@ h1 {
 
 .primary-button:hover {
     background-color: #1976D2;
+}
+
+.primary-button.connected-glow {
+    animation: pulse-glow 10s ease-in-out infinite !important;
+}
+
+@keyframes pulse-glow {
+
+    0%,
+    100% {
+        box-shadow: 0 0 30px rgba(140, 95, 233, 0.9),
+            0 0 60px rgba(140, 95, 233, 0.6),
+            0 0 100px rgba(140, 95, 233, 0.4) !important;
+    }
+
+    50% {
+        box-shadow: 0 0 50px rgba(140, 95, 233, 1),
+            0 0 100px rgba(140, 95, 233, 0.8),
+            0 0 150px rgba(140, 95, 233, 0.6) !important;
+    }
 }
 
 .secondary-button {
@@ -187,7 +210,8 @@ table {
     border-collapse: collapse;
 }
 
-th, td {
+th,
+td {
     padding: 12px;
     text-align: left;
     border-bottom: 1px solid var(--border-color);
@@ -223,4 +247,4 @@ tr:hover {
     .readings-panel {
         grid-template-columns: 1fr;
     }
-} 
+}

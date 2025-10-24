@@ -83,3 +83,25 @@
     opacity: 0;
   }
 }
+
+/* Connected Button Glow Effect */
+#connectButton.connected-glow {
+  animation: pulse-glow 2s ease-in-out infinite !important;
+  position: relative !important;
+}
+
+@keyframes pulse-glow {
+
+  0%,
+  100% {
+    filter: drop-shadow(0 0 8px rgba(140, 95, 233, 0.6)) drop-shadow(0 0 16px rgba(140, 95, 233, 0.4));
+    box-shadow: 0 0 20px rgba(140, 95, 233, 0.7),
+      0 0 35px rgba(140, 95, 233, 0.5) !important;
+  }
+
+  50% {
+    filter: drop-shadow(0 0 12px rgba(140, 95, 233, 0.8)) drop-shadow(0 0 24px rgba(140, 95, 233, 0.6));
+    box-shadow: 0 0 30px rgba(140, 95, 233, 0.9),
+      0 0 50px rgba(140, 95, 233, 0.7) !important;
+  }
+}
