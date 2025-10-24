@@ -16,7 +16,11 @@
 <body class="bg-white dark:bg-gray-900 transition-colors duration-200 font-['Open_Sans']">
     <div class="container mx-auto px-4 max-w-4xl">
         <header class="flex justify-between items-center py-6 px-6">
-            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Carve Workshop Battery Logger for RC3563</h1>
+            <div class="flex items-center gap-4">
+                <img src="./logo-light.svg" alt="Logo" class="h-10 w-10 dark:hidden">
+                <img src="./logo-dark.svg" alt="Logo" class="h-10 w-10 hidden dark:block">
+                <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Battery Logger for RC3563</h1>
+            </div>
             <div class="connection-status flex items-center gap-4">
                 <span id="statusText" class="text-gray-700 dark:text-gray-300">Not Connected</span>
                 <button id="connectButton"
