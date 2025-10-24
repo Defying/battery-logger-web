@@ -163,7 +163,7 @@
     <!-- Footer -->
     <footer class="mt-12 pb-6 text-center text-sm text-gray-500 dark:text-gray-400">
         <p>not my fault if you blow up 💥</p>
-        <p class="mt-1">commit: <code id="commitHash" class="text-gray-600 dark:text-gray-300"></code></p>
+        <p class="mt-1">commit: <code class="text-gray-600 dark:text-gray-300">98d7b32</code></p>
     </footer>
 
     <!-- Confirmation Modal -->
@@ -182,9 +182,6 @@
     <div id="toastContainer" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2"></div>
 
     <script>
-        // Set git commit hash
-        document.getElementById('commitHash').textContent = __GIT_COMMIT_HASH__;
-        
         // Only use system dark mode preference
         if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
             document.documentElement.classList.add('dark');
