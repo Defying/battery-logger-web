@@ -40,6 +40,8 @@ class BatteryLogger {
       .querySelector(".progress");
     this.readingsLog = document.getElementById("readingsLog");
     this.exportButton = document.getElementById("exportButton");
+    this.importButton = document.getElementById("importButton");
+    this.importFileInput = document.getElementById("importFileInput");
     this.clearButton = document.getElementById("clearButton");
     this.readingCounterSpan = document.createElement("div");
     this.readingCounterSpan.className =
@@ -88,6 +90,8 @@ class BatteryLogger {
   initializeEventListeners() {
     this.connectButton.addEventListener("click", () => this.toggleConnection());
     this.exportButton.addEventListener("click", () => this.exportToCSV());
+    this.importButton.addEventListener("click", () => this.importFileInput.click());
+    this.importFileInput.addEventListener("change", (e) => this.importFromCSV(e));
     this.clearButton.addEventListener("click", () => this.clearLog());
   }
 
@@ -589,6 +593,79 @@ class BatteryLogger {
     link.href = URL.createObjectURL(blob);
     link.download = filename;
     link.click();
+  }
+
+  importFromCSV(event) {
+    const file = event.target.files[0];
+    if (!file) {
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const csvContent = e.target.result;
+        const lines = csvContent.split("\n");
+        
+        // Skip header row
+        const dataLines = lines.slice(1).filter(line => line.trim());
+        
+        if (dataLines.length === 0) {
+          alert("No data found in CSV file");
+          return;
+        }
+
+        // Clear existing data
+        this.readings = [];
+        this.readingsLog.innerHTML = "";
+        
+        // Parse and import each row
+        let maxCellNum = 0;
+        dataLines.forEach((line) => {
+          const parts = line.split(",");
+          if (parts.length >= 5) {
+            const cellNum = parseInt(parts[0]);
+            const cellType = parts[1];
+            const voltage = parts[2].replace("V", "");
+            const acirParts = parts[3].trim().split(" ");
+            const resistance = acirParts[0];
+            const rUnit = acirParts[1] || "mΩ";
+            const timestamp = parts[4];
+
+            const reading = {
+              cellNum: cellNum,
+              cellType: cellType,
+              voltage: voltage,
+              resistance: resistance,
+              rUnit: rUnit,
+              timestamp: timestamp,
+            };
+
+            this.readings.push(reading);
+            this.addReadingToTable(reading);
+            
+            if (cellNum > maxCellNum) {
+              maxCellNum = cellNum;
+            }
+          }
+        });
+
+        // Update cell counter to continue from last imported cell
+        this.cellNum = maxCellNum + 1;
+        this.updateCurrentValues("-", "-", "");
+        this.readingNumberSpan.textContent = "-/-";
+        
+        alert(`Successfully imported ${dataLines.length} readings`);
+      } catch (error) {
+        console.error("Error importing CSV:", error);
+        alert("Error importing CSV file. Please make sure it's in the correct format.");
+      }
+      
+      // Reset file input
+      event.target.value = "";
+    };
+
+    reader.readAsText(file);
   }
 
   updateReadingsLogTitle() {
