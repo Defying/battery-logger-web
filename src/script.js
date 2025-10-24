@@ -605,12 +605,14 @@ class BatteryLogger {
         this.connectButton.textContent = "Disconnect";
         this.statusText.textContent = "Connected";
         this.statusText.className = "text-green-600 dark:text-green-400";
+        this.usbIcon.classList.remove("hidden");
         showToast("Connected successfully", "success");
         break;
       case "disconnected":
         this.connectButton.textContent = "Connect";
         this.statusText.textContent = "Not Connected";
         this.statusText.className = "text-gray-700 dark:text-gray-300";
+        this.usbIcon.classList.add("hidden");
         showToast("Disconnected", "info");
         break;
       case "error":

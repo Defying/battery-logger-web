@@ -9,8 +9,9 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="./src/main.css">
-    <link rel="icon" href="/favicon.png" type="image/png">
+    <link rel="icon" href="./favicon.png" type="image/png">
+  <script type="module" crossorigin src="./assets/index-9-ZvFpop.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/index-DN2FKNo6.css">
 </head>
 
 <body class="bg-white transition-colors duration-200 font-['Open_Sans']" style="background-color: #121212;">
@@ -23,7 +24,7 @@
             </div>
             <div class="connection-status flex items-center gap-4">
                 <div class="flex items-center gap-2">
-                    <img id="usbIcon" src="./USB_icon.svg" alt="USB" class="h-7 w-7 dark:invert">
+                    <img id="usbIcon" src="./USB_icon.svg" alt="USB" class="h-7 w-7 hidden dark:invert">
                     <span id="statusText" class="text-gray-700 dark:text-gray-300">Not Connected</span>
                 </div>
                 <button id="connectButton" class="primary-button text-white px-6 py-2 rounded-full"
@@ -157,7 +158,6 @@
     <!-- Toast Notification Container -->
     <div id="toastContainer" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2"></div>
 
-    <script type="module" src="./src/script.js"></script>
     <script>
         // Only use system dark mode preference
         if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
