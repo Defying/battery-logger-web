@@ -105,6 +105,252 @@
   transform: scale(1.05);
 }
 
+/* Toggle Switch Styles */
+.toggle-switch {
+  position: relative;
+  display: inline-block;
+  width: 48px;
+  height: 24px;
+}
+
+.toggle-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.toggle-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #ccc;
+  transition: 0.3s;
+  border-radius: 24px;
+}
+
+.toggle-slider:before {
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: 0.3s;
+  border-radius: 50%;
+}
+
+.toggle-switch input:checked+.toggle-slider {
+  background-color: #8c5fe9;
+}
+
+.toggle-switch input:checked+.toggle-slider:before {
+  transform: translateX(24px);
+}
+
+.dark .toggle-slider {
+  background-color: #4b5563;
+}
+
+.dark .toggle-switch input:checked+.toggle-slider {
+  background-color: #8c5fe9;
+}
+
+/* Modern Input Styles */
+select,
+input[type="text"],
+input[type="number"] {
+  transition: all 0.2s ease;
+  border: 2px solid transparent !important;
+  background-color: #f3f4f6 !important;
+}
+
+.dark select,
+.dark input[type="text"],
+.dark input[type="number"] {
+  background-color: #374151 !important;
+  border-color: transparent !important;
+}
+
+select:focus,
+input[type="text"]:focus,
+input[type="number"]:focus {
+  outline: none !important;
+  border-color: #8c5fe9 !important;
+  box-shadow: 0 0 0 3px rgba(140, 95, 233, 0.1) !important;
+  transform: translateY(-1px);
+}
+
+select:hover,
+input[type="text"]:hover,
+input[type="number"]:hover {
+  background-color: #e5e7eb !important;
+  transform: translateY(-1px);
+}
+
+.dark select:hover,
+.dark input[type="text"]:hover,
+.dark input[type="number"]:hover {
+  background-color: #4b5563 !important;
+}
+
+/* Custom Number Input Styling */
+input[type="number"] {
+  -moz-appearance: textfield;
+  text-align: center;
+  font-weight: 600;
+  font-size: 1.1rem;
+}
+
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Modern Modal Styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.modal-overlay.hidden {
+  display: none;
+}
+
+.modal-content {
+  background: white;
+  border-radius: 16px;
+  padding: 32px;
+  max-width: 400px;
+  width: 90%;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  animation: scaleIn 0.2s ease-out;
+}
+
+.dark .modal-content {
+  background: #1f2937;
+}
+
+.modal-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 12px;
+}
+
+.dark .modal-title {
+  color: #f9fafb;
+}
+
+.modal-message {
+  font-size: 0.95rem;
+  color: #6b7280;
+  margin-bottom: 24px;
+  line-height: 1.6;
+}
+
+.dark .modal-message {
+  color: #9ca3af;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+.modal-button {
+  padding: 10px 24px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s ease;
+}
+
+.modal-button:hover {
+  transform: translateY(-1px);
+}
+
+.modal-button-cancel {
+  background: #e5e7eb;
+  color: #374151;
+}
+
+.modal-button-cancel:hover {
+  background: #d1d5db;
+}
+
+.dark .modal-button-cancel {
+  background: #374151;
+  color: #e5e7eb;
+}
+
+.dark .modal-button-cancel:hover {
+  background: #4b5563;
+}
+
+.modal-button-confirm {
+  background: #ef4444;
+  color: white;
+}
+
+.modal-button-confirm:hover {
+  background: #dc2626;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    transform: scale(0.95);
+    opacity: 0;
+  }
+
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Reload Cell Button Styles */
+.reload-cell-btn {
+  transition: transform 0.3s ease;
+  cursor: pointer;
+}
+
+.reload-cell-btn:hover {
+  transform: rotate(180deg) scale(1.2);
+}
+
+/* Export button purple hover */
+#exportButton:hover {
+  background-color: #7c4fd9 !important;
+}
+
 #connectButton.connected-glow::before {
   content: '';
   position: absolute;

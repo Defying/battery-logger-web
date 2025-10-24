@@ -77,10 +77,22 @@ class BatteryLogger {
     this.readingsLogTitle = document.getElementById("readingsLogTitle");
     this.currentMeasurementsPanel = document.getElementById("currentMeasurementsPanel");
     this.measurementsContainer = document.getElementById("measurementsContainer");
+    this.currentReadingPanel = document.querySelector(".current-reading");
+    this.readingsLogPanel = document.querySelector(".readings-log");
+    this.readingValuesPanel = document.querySelector(".reading-values");
     this.usbIcon = document.getElementById("usbIcon");
 
     // Update title initially
     this.updateReadingsLogTitle();
+
+    // Hide readings log table and reading values until connected or imported
+    this.readingsLogPanel.style.display = "none";
+    this.readingValuesPanel.style.display = "none";
+
+    // Initialize sorting
+    this.currentSortColumn = null;
+    this.currentSortDirection = 'asc';
+    this.initializeSorting();
 
     // Add event listener for cell type changes
     this.cellTypeInput.addEventListener("change", () => {
@@ -179,6 +191,8 @@ class BatteryLogger {
 
       this.updateUI("connected");
       this.stabilityText.textContent = "Waiting for stable reading...";
+      this.readingsLogPanel.style.display = "block";
+      this.readingValuesPanel.style.display = "grid";
       this.startReading();
     } catch (error) {
       console.error("Connection error:", error);
@@ -198,6 +212,11 @@ class BatteryLogger {
     this.updateUI("disconnected");
     this.stabilityText.textContent = "Idle";
     this.readingNumberSpan.textContent = "-";
+    // Only hide readings log and reading values if there are no readings (no imported data)
+    if (this.readings.length === 0) {
+      this.readingsLogPanel.style.display = "none";
+      this.readingValuesPanel.style.display = "none";
+    }
   }
 
   async startReading() {
@@ -576,14 +595,15 @@ class BatteryLogger {
   addReadingToTable(reading) {
     const row = document.createElement("tr");
     row.className = "bg-white dark:bg-gray-800";
+    row.dataset.cellNum = reading.cellNum;
     row.innerHTML = `
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-300">${reading.cellNum}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-300">${reading.voltage}V</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-300">${reading.resistance} ${reading.rUnit}</td>
+            <td class="voltage-cell px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-300" data-voltage="${reading.voltage}">${reading.voltage}V</td>
+            <td class="acir-cell px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-300" data-resistance="${reading.resistance}">${reading.resistance} ${reading.rUnit}</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-300">${reading.timestamp}</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-right">
-                <button class="reload-cell-btn text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 font-medium" data-cell-num="${reading.cellNum}">
-                    ↻ Retest
+                <button class="reload-cell-btn text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 font-medium text-3xl" data-cell-num="${reading.cellNum}">
+                    ↻
                 </button>
             </td>
         `;
@@ -612,6 +632,130 @@ class BatteryLogger {
     } else {
       this.readingsLog.appendChild(row);
     }
+
+    // Update voltage and ACIR colors after adding
+    this.updateHighlights();
+  }
+
+  updateHighlights() {
+    // Update voltage highlights (higher is better)
+    const voltageCells = this.readingsLog.querySelectorAll('.voltage-cell');
+    if (voltageCells.length > 0) {
+      let minVoltage = Infinity;
+      let maxVoltage = -Infinity;
+
+      voltageCells.forEach(cell => {
+        const voltage = parseFloat(cell.dataset.voltage);
+        if (voltage < minVoltage) minVoltage = voltage;
+        if (voltage > maxVoltage) maxVoltage = voltage;
+      });
+
+      voltageCells.forEach(cell => {
+        const voltage = parseFloat(cell.dataset.voltage);
+        cell.classList.remove('text-green-600', 'dark:text-green-400', 'text-red-600', 'dark:text-red-400', 'font-bold');
+        cell.classList.add('text-gray-900', 'dark:text-gray-300');
+
+        if (voltage === maxVoltage) {
+          cell.classList.remove('text-gray-900', 'dark:text-gray-300');
+          cell.classList.add('text-green-600', 'dark:text-green-400', 'font-bold');
+        } else if (voltage === minVoltage) {
+          cell.classList.remove('text-gray-900', 'dark:text-gray-300');
+          cell.classList.add('text-red-600', 'dark:text-red-400', 'font-bold');
+        }
+      });
+    }
+
+    // Update ACIR highlights (lower is better)
+    const acirCells = this.readingsLog.querySelectorAll('.acir-cell');
+    if (acirCells.length > 0) {
+      let minResistance = Infinity;
+      let maxResistance = -Infinity;
+
+      acirCells.forEach(cell => {
+        const resistance = parseFloat(cell.dataset.resistance);
+        if (resistance < minResistance) minResistance = resistance;
+        if (resistance > maxResistance) maxResistance = resistance;
+      });
+
+      acirCells.forEach(cell => {
+        const resistance = parseFloat(cell.dataset.resistance);
+        cell.classList.remove('text-green-600', 'dark:text-green-400', 'text-red-600', 'dark:text-red-400', 'font-bold');
+        cell.classList.add('text-gray-900', 'dark:text-gray-300');
+
+        if (resistance === minResistance) {
+          cell.classList.remove('text-gray-900', 'dark:text-gray-300');
+          cell.classList.add('text-green-600', 'dark:text-green-400', 'font-bold');
+        } else if (resistance === maxResistance) {
+          cell.classList.remove('text-gray-900', 'dark:text-gray-300');
+          cell.classList.add('text-red-600', 'dark:text-red-400', 'font-bold');
+        }
+      });
+    }
+  }
+
+  initializeSorting() {
+    const headers = document.querySelectorAll('.sortable-header');
+    headers.forEach(header => {
+      header.addEventListener('click', () => {
+        const sortColumn = header.dataset.sort;
+        this.sortTable(sortColumn);
+      });
+    });
+  }
+
+  sortTable(column) {
+    // Toggle direction if clicking same column
+    if (this.currentSortColumn === column) {
+      this.currentSortDirection = this.currentSortDirection === 'asc' ? 'desc' : 'asc';
+    } else {
+      this.currentSortColumn = column;
+      this.currentSortDirection = 'asc';
+    }
+
+    // Get all rows
+    const rows = Array.from(this.readingsLog.querySelectorAll('tr'));
+
+    // Sort rows
+    rows.sort((a, b) => {
+      let aValue, bValue;
+
+      if (column === 'cellNum') {
+        aValue = parseInt(a.querySelector('td:nth-child(1)').textContent);
+        bValue = parseInt(b.querySelector('td:nth-child(1)').textContent);
+      } else if (column === 'voltage') {
+        aValue = parseFloat(a.querySelector('.voltage-cell').dataset.voltage);
+        bValue = parseFloat(b.querySelector('.voltage-cell').dataset.voltage);
+      } else if (column === 'resistance') {
+        aValue = parseFloat(a.querySelector('.acir-cell').dataset.resistance);
+        bValue = parseFloat(b.querySelector('.acir-cell').dataset.resistance);
+      } else if (column === 'timestamp') {
+        aValue = new Date(a.querySelector('td:nth-child(4)').textContent);
+        bValue = new Date(b.querySelector('td:nth-child(4)').textContent);
+      }
+
+      if (this.currentSortDirection === 'asc') {
+        return aValue > bValue ? 1 : -1;
+      } else {
+        return aValue < bValue ? 1 : -1;
+      }
+    });
+
+    // Clear and repopulate table
+    this.readingsLog.innerHTML = '';
+    rows.forEach(row => this.readingsLog.appendChild(row));
+
+    // Update sort indicators
+    document.querySelectorAll('.sortable-header').forEach(header => {
+      const indicator = header.querySelector('.sort-indicator');
+      if (header.dataset.sort === column) {
+        indicator.textContent = this.currentSortDirection === 'asc' ? ' ▲' : ' ▼';
+      } else {
+        indicator.textContent = '';
+      }
+    });
+
+    // Update highlights after sorting
+    this.updateHighlights();
   }
 
   updateUI(state, message = "") {
@@ -725,6 +869,13 @@ class BatteryLogger {
         this.updateCurrentValues("-", "-", "");
         this.readingNumberSpan.textContent = "-/-";
 
+        // Show readings log and reading values after successful import
+        this.readingsLogPanel.style.display = "block";
+        this.readingValuesPanel.style.display = "grid";
+
+        // Update voltage and ACIR colors after import
+        this.updateHighlights();
+
         showToast(`Successfully imported ${dataLines.length} readings`, "success");
       } catch (error) {
         console.error("Error importing CSV:", error);
@@ -747,10 +898,19 @@ class BatteryLogger {
   }
 
   clearLog() {
-    if (
-      this.readings.length === 0 ||
-      confirm("Are you sure you want to clear all readings?")
-    ) {
+    if (this.readings.length === 0) {
+      showToast("No readings to clear", "info");
+      return;
+    }
+
+    // Show modern confirmation modal
+    const modal = document.getElementById("confirmModal");
+    const confirmBtn = document.getElementById("confirmOk");
+    const cancelBtn = document.getElementById("confirmCancel");
+
+    modal.classList.remove("hidden");
+
+    const handleConfirm = () => {
       this.readings = [];
       this.readingsLog.innerHTML = "";
       this.cellNum = 1;
@@ -768,7 +928,36 @@ class BatteryLogger {
         : "Waiting for connection";
       this.updateReadingsLogTitle();
       this.clearMeasurementsDisplay();
-    }
+      // Hide readings log and reading values if not connected
+      if (!this.isConnected) {
+        this.readingsLogPanel.style.display = "none";
+        this.readingValuesPanel.style.display = "none";
+      }
+      showToast("Readings cleared", "info");
+      modal.classList.add("hidden");
+      cleanup();
+    };
+
+    const handleCancel = () => {
+      modal.classList.add("hidden");
+      cleanup();
+    };
+
+    const cleanup = () => {
+      confirmBtn.removeEventListener("click", handleConfirm);
+      cancelBtn.removeEventListener("click", handleCancel);
+      modal.removeEventListener("click", handleOverlayClick);
+    };
+
+    const handleOverlayClick = (e) => {
+      if (e.target === modal) {
+        handleCancel();
+      }
+    };
+
+    confirmBtn.addEventListener("click", handleConfirm);
+    cancelBtn.addEventListener("click", handleCancel);
+    modal.addEventListener("click", handleOverlayClick);
   }
 
   reloadCell(cellNum) {
@@ -790,6 +979,9 @@ class BatteryLogger {
         row.remove();
       }
     });
+
+    // Update voltage and ACIR colors after removal
+    this.updateHighlights();
 
     // Set up for reloading this cell
     this.cellNum = cellNum;
