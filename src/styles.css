@@ -79,25 +79,6 @@ h1 {
     background-color: #1976D2;
 }
 
-.primary-button.connected-glow {
-    animation: pulse-glow 10s ease-in-out infinite !important;
-}
-
-@keyframes pulse-glow {
-
-    0%,
-    100% {
-        box-shadow: 0 0 30px rgba(140, 95, 233, 0.9),
-            0 0 60px rgba(140, 95, 233, 0.6),
-            0 0 100px rgba(140, 95, 233, 0.4) !important;
-    }
-
-    50% {
-        box-shadow: 0 0 50px rgba(140, 95, 233, 1),
-            0 0 100px rgba(140, 95, 233, 0.8),
-            0 0 150px rgba(140, 95, 233, 0.6) !important;
-    }
-}
 
 .secondary-button {
     background-color: #e0e0e0;

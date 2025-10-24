@@ -86,22 +86,68 @@
 
 /* Connected Button Glow Effect */
 #connectButton.connected-glow {
-  animation: pulse-glow 2s ease-in-out infinite !important;
   position: relative !important;
+  filter: drop-shadow(0 0 10px rgba(140, 95, 233, 0.4)) drop-shadow(0 0 20px rgba(140, 95, 233, 0.25));
+  box-shadow: 0 0 25px rgba(140, 95, 233, 0.4),
+    0 0 45px rgba(140, 95, 233, 0.25) !important;
+}
+
+/* Button hover scale effect */
+#connectButton,
+.primary-button,
+.secondary-button {
+  transition: transform 0.2s ease;
+}
+
+#connectButton:hover,
+.primary-button:hover,
+.secondary-button:hover {
+  transform: scale(1.05);
+}
+
+#connectButton.connected-glow::before {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: 9999px;
+  padding: 3px;
+  background: linear-gradient(120deg,
+      #ff0000,
+      #ff7f00,
+      #ffff00,
+      #00ff00,
+      #0000ff,
+      #8b00ff,
+      #ff0000);
+  background-size: 300% 100%;
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  animation: rotate-border 25s linear infinite;
+}
+
+@keyframes rotate-border {
+  0% {
+    background-position: 300% 50%;
+  }
+
+  100% {
+    background-position: 0% 50%;
+  }
 }
 
 @keyframes pulse-glow {
 
   0%,
   100% {
-    filter: drop-shadow(0 0 8px rgba(140, 95, 233, 0.6)) drop-shadow(0 0 16px rgba(140, 95, 233, 0.4));
-    box-shadow: 0 0 20px rgba(140, 95, 233, 0.7),
-      0 0 35px rgba(140, 95, 233, 0.5) !important;
+    filter: drop-shadow(0 0 8px rgba(140, 95, 233, 0.65)) drop-shadow(0 0 16px rgba(140, 95, 233, 0.45));
+    box-shadow: 0 0 22px rgba(140, 95, 233, 0.75),
+      0 0 38px rgba(140, 95, 233, 0.55) !important;
   }
 
   50% {
-    filter: drop-shadow(0 0 12px rgba(140, 95, 233, 0.8)) drop-shadow(0 0 24px rgba(140, 95, 233, 0.6));
-    box-shadow: 0 0 30px rgba(140, 95, 233, 0.9),
-      0 0 50px rgba(140, 95, 233, 0.7) !important;
+    filter: drop-shadow(0 0 10px rgba(140, 95, 233, 0.7)) drop-shadow(0 0 20px rgba(140, 95, 233, 0.5));
+    box-shadow: 0 0 26px rgba(140, 95, 233, 0.8),
+      0 0 42px rgba(140, 95, 233, 0.6) !important;
   }
 }

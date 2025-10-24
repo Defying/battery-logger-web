@@ -15,7 +15,7 @@
 
 <body class="bg-white transition-colors duration-200 font-['Open_Sans']" style="background-color: #121212;">
     <div class="container mx-auto px-4 max-w-4xl">
-        <header class="flex justify-between items-center py-6 px-6">
+        <header class="flex justify-between items-center pt-12 pb-6 px-6">
             <div class="flex items-center gap-4">
                 <img src="./cw-black.png" alt="Carve Workshop Logo" class="h-10 w-auto dark:hidden">
                 <img src="./cw-white.png" alt="Carve Workshop Logo" class="h-10 w-auto hidden dark:block">
@@ -133,7 +133,7 @@
                                     Time</th>
                                 <th
                                     class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                    Action</th>
+                                </th>
                             </tr>
                         </thead>
                         <tbody id="readingsLog" class="divide-y divide-gray-200 dark:divide-gray-700">
@@ -153,6 +153,12 @@
                 class="secondary-button bg-red-500 hover:bg-red-600 text-white px-6 py-2 rounded-full">Clear</button>
         </div>
     </div>
+
+    <!-- Footer -->
+    <footer class="mt-12 pb-6 text-center text-sm text-gray-500 dark:text-gray-400">
+        <p>not my fault if you blow up 💥</p>
+        <p class="mt-1">commit: <code class="text-gray-600 dark:text-gray-300">3999141</code></p>
+    </footer>
 
     <!-- Toast Notification Container -->
     <div id="toastContainer" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2"></div>

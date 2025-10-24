@@ -117,6 +117,21 @@ class BatteryLogger {
     this.importButton.addEventListener("click", () => this.importFileInput.click());
     this.importFileInput.addEventListener("change", (e) => this.importFromCSV(e));
     this.clearButton.addEventListener("click", () => this.clearLog());
+
+    // Hover effect for connected button
+    this.connectButton.addEventListener("mouseenter", () => {
+      const buttonText = this.connectButton.querySelector("span");
+      if (this.port && buttonText.textContent === "Connected") {
+        buttonText.textContent = "Disconnect";
+      }
+    });
+
+    this.connectButton.addEventListener("mouseleave", () => {
+      const buttonText = this.connectButton.querySelector("span");
+      if (this.port && buttonText.textContent === "Disconnect") {
+        buttonText.textContent = "Connected";
+      }
+    });
   }
 
   playBeep() {
