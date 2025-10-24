@@ -10,20 +10,19 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="icon" href="./favicon.png" type="image/png">
-  <script type="module" crossorigin src="./assets/index-DZ6jNk3v.js"></script>
-  <link rel="stylesheet" crossorigin href="./assets/index-DN2FKNo6.css">
+  <script type="module" crossorigin src="./assets/index-BExsQKRc.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/index-DSdirc6u.css">
 </head>
 
 <body class="bg-white transition-colors duration-200 font-['Open_Sans']" style="background-color: #121212;">
     <div class="container mx-auto px-4 max-w-4xl">
-        <header class="flex justify-between items-center py-6 px-6">
+        <header class="flex justify-between items-center pt-12 pb-6 px-6">
             <div class="flex items-center gap-4">
                 <img src="./cw-black.png" alt="Carve Workshop Logo" class="h-10 w-auto dark:hidden">
                 <img src="./cw-white.png" alt="Carve Workshop Logo" class="h-10 w-auto hidden dark:block">
                 <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Battery Logger for RC3563</h1>
             </div>
             <div class="connection-status flex items-center gap-4">
-                <span id="statusText" class="text-gray-700 dark:text-gray-300">Not Connected</span>
                 <button id="connectButton"
                     class="primary-button text-white px-6 py-2 rounded-full flex items-center gap-2"
                     style="background-color: #8c5fe9;">
@@ -55,15 +54,19 @@
                     <input type="text" id="customCellType" placeholder="Enter custom cell type"
                         class="mt-2 block w-full rounded border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white px-3 py-2 hidden">
                 </div>
-                <div class="setting-group flex flex-col items-center justify-end">
-                    <label for="enableSound" class="block text-gray-700 dark:text-gray-300">Sound</label>
-                    <input type="checkbox" id="enableSound"
-                        class="mt-3 w-6 h-6 rounded border-gray-300 dark:border-gray-600 text-blue-500" checked>
+                <div class="setting-group flex flex-col items-center justify-center">
+                    <label for="enableSound" class="block text-gray-700 dark:text-gray-300 mb-2">Sound</label>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="enableSound" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
                 </div>
-                <div class="setting-group flex flex-col items-center justify-end">
-                    <label for="averaging" class="block text-gray-700 dark:text-gray-300">Averaging</label>
-                    <input type="checkbox" id="averaging"
-                        class="mt-3 w-6 h-6 rounded border-gray-300 dark:border-gray-600 text-blue-500" checked>
+                <div class="setting-group flex flex-col items-center justify-center">
+                    <label for="averaging" class="block text-gray-700 dark:text-gray-300 mb-2">Averaging</label>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="averaging" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
                 </div>
                 <div class="setting-group">
                     <label for="numReadings" class="block text-gray-700 dark:text-gray-300"># of Readings:</label>
@@ -98,7 +101,8 @@
                     <div id="stabilityProgress" class="progress-bar bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                         <div class="progress bg-blue-500 h-2 rounded-full transition-all duration-300"></div>
                     </div>
-                    <span id="stabilityText" class="text-sm text-gray-600 dark:text-gray-400 mt-2">Waiting for stable
+                    <span id="stabilityText" class="block text-sm text-gray-600 dark:text-gray-400 mt-6">Waiting for
+                        stable
                         reading...</span>
                 </div>
             </div>
@@ -121,21 +125,21 @@
                     <table class="min-w-full">
                         <thead class="bg-gray-50 dark:bg-gray-700">
                             <tr>
-                                <th
-                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                    Cell #</th>
-                                <th
-                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                    Voltage</th>
-                                <th
-                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                    ACIR</th>
-                                <th
-                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                    Time</th>
+                                <th data-sort="cellNum"
+                                    class="sortable-header px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600">
+                                    Cell # <span class="sort-indicator"></span></th>
+                                <th data-sort="voltage"
+                                    class="sortable-header px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600">
+                                    Voltage <span class="sort-indicator"></span></th>
+                                <th data-sort="resistance"
+                                    class="sortable-header px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600">
+                                    ACIR <span class="sort-indicator"></span></th>
+                                <th data-sort="timestamp"
+                                    class="sortable-header px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600">
+                                    Time <span class="sort-indicator"></span></th>
                                 <th
                                     class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                    Action</th>
+                                </th>
                             </tr>
                         </thead>
                         <tbody id="readingsLog" class="divide-y divide-gray-200 dark:divide-gray-700">
@@ -145,14 +149,32 @@
             </div>
         </div>
 
-        <div class="controls mt-4 flex gap-3 px-6 justify-center">
-            <button id="exportButton"
-                class="secondary-button bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded-full">Export</button>
+        <div class="controls mt-12 flex gap-3 px-6 justify-center">
+            <button id="exportButton" class="secondary-button text-white px-6 py-2 rounded-full"
+                style="background-color: #8c5fe9;">Export</button>
             <button id="importButton"
-                class="secondary-button bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded-full">Import</button>
+                class="secondary-button bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded-full">Import</button>
             <input type="file" id="importFileInput" accept=".csv" style="display: none;">
             <button id="clearButton"
                 class="secondary-button bg-red-500 hover:bg-red-600 text-white px-6 py-2 rounded-full">Clear</button>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="mt-12 pb-6 text-center text-sm text-gray-500 dark:text-gray-400">
+        <p>not my fault if you blow up 💥</p>
+        <p class="mt-1">commit: <code class="text-gray-600 dark:text-gray-300">3999141</code></p>
+    </footer>
+
+    <!-- Confirmation Modal -->
+    <div id="confirmModal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h3 class="modal-title">Clear All Readings?</h3>
+            <p class="modal-message">Are you sure you want to clear all readings? This action cannot be undone.</p>
+            <div class="modal-actions">
+                <button id="confirmCancel" class="modal-button modal-button-cancel">Cancel</button>
+                <button id="confirmOk" class="modal-button modal-button-confirm">Clear All</button>
+            </div>
         </div>
     </div>
 
