@@ -409,3 +409,21 @@ body.dark,
 html.dark body {
   background: #0a0a0c !important;
 }
+
+/* Darker cards/boxes */
+.bg-white {
+  background-color: #f5f5f5 !important;
+}
+
+.bg-gray-100 {
+  background-color: #e8e8e8 !important;
+}
+
+.dark .bg-white,
+.dark .bg-gray-800 {
+  background-color: #141418 !important;
+}
+
+.dark .bg-gray-100 {
+  background-color: #1a1a1f !important;
+}
