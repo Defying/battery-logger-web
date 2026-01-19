@@ -44,7 +44,6 @@ class BatteryLogger {
     this.waitingForProbeRemoval = false;
     this.PROBE_REMOVAL_THRESHOLD = 0.1; // Voltage threshold to detect probe removal
     this.readingLocked = false; // New property to track if we're between multiple readings
-    this.messageBuffer = new Uint8Array(0); // NEW: rolling buffer
 
     // UI Elements
     this.connectButton = document.getElementById("connectButton");
@@ -226,81 +225,13 @@ class BatteryLogger {
         if (done) {
           break;
         }
-        if (value) {
-          this.appendToBuffer(value);
-        }
+        this.processData(value);
       } catch (error) {
         console.error("Read error:", error);
         this.updateUI("error", "Connection lost");
         break;
       }
     }
-  }
-
-  appendToBuffer(newData) {
-    // Merge newData into existing buffer
-    const combined = new Uint8Array(this.messageBuffer.length + newData.length);
-    combined.set(this.messageBuffer, 0);
-    combined.set(newData, this.messageBuffer.length);
-    this.messageBuffer = combined;
-
-    // While we have at least one full 10-byte packet, process it
-    while (this.messageBuffer.length >= 10) {
-      const packet = this.messageBuffer.slice(0, 10);
-      this.processPacket(packet);
-      this.messageBuffer = this.messageBuffer.slice(10);
-    }
-  }
-
-  processPacket(packet) {
-    if (packet.length !== 10) {
-      return; // safety guard
-    }
-
-    const [
-      statusDisp,
-      rRangeCode,
-      rDisp1,
-      rDisp2,
-      rDisp3,
-      signCode,
-      vRangeCode,
-      vDisp1,
-      vDisp2,
-      vDisp3,
-    ] = packet;
-
-    // --- Resistance decode ---
-    const rDispCode = (statusDisp & 0xf0) >> 4;
-    let resistance =
-      ((rDisp1 & 0xff) | ((rDisp2 & 0xff) << 8) | ((rDisp3 & 0xff) << 16)) /
-      10000;
-    let rUnit = "mΩ";
-
-    if (rDispCode === 0x05) {
-      rUnit = "mΩ";
-    } else if (rDispCode === 0x06) {
-      rUnit = "mΩ";
-      resistance = "OL";
-    } else if (rDispCode === 0x09) {
-      rUnit = "Ω";
-    } else if (rDispCode === 0x0a) {
-      rUnit = "Ω";
-      resistance = "OL";
-    }
-
-    // --- Voltage decode ---
-    const vDispCode = statusDisp & 0x0f;
-    let voltage =
-      ((vDisp1 & 0xff) | ((vDisp2 & 0xff) << 8) | ((vDisp3 & 0xff) << 16)) /
-      10000;
-    voltage = signCode ? -voltage : voltage;
-
-    if (vDispCode === 0x08) {
-      voltage = "OL";
-    }
-
-    this.updateReadings(voltage, resistance, rUnit);
   }
 
   processData(data) {
@@ -346,7 +277,7 @@ class BatteryLogger {
     let voltage =
       ((vDisp1 & 0xff) | ((vDisp2 & 0xff) << 8) | ((vDisp3 & 0xff) << 16)) /
       10000;
-    voltage = signCode ? -voltage : voltage;
+    voltage = (signCode === 1 ? 1 : -1) * voltage;
 
     if (vDispCode === 0x08) {
       voltage = "OL";
