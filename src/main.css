@@ -397,3 +397,15 @@ input[type="number"]::-webkit-inner-spin-button {
       0 0 42px rgba(140, 95, 233, 0.6) !important;
   }
 }
+
+/* Custom page background */
+body {
+  background: linear-gradient(135deg, #fafafa 0%, #f0f0f5 50%, #fafafa 100%) !important;
+  min-height: 100vh;
+}
+
+.dark body,
+body.dark,
+html.dark body {
+  background: linear-gradient(135deg, #0f0f14 0%, #1a1a24 50%, #0f0f14 100%) !important;
+}
