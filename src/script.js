@@ -294,7 +294,7 @@ class BatteryLogger {
     let voltage =
       ((vDisp1 & 0xff) | ((vDisp2 & 0xff) << 8) | ((vDisp3 & 0xff) << 16)) /
       10000;
-    voltage = (signCode === 1 ? 1 : -1) * voltage;
+    voltage = signCode ? -voltage : voltage;
 
     if (vDispCode === 0x08) {
       voltage = "OL";
@@ -346,7 +346,7 @@ class BatteryLogger {
     let voltage =
       ((vDisp1 & 0xff) | ((vDisp2 & 0xff) << 8) | ((vDisp3 & 0xff) << 16)) /
       10000;
-    voltage = (signCode === 1 ? 1 : -1) * voltage;
+    voltage = signCode ? -voltage : voltage;
 
     if (vDispCode === 0x08) {
       voltage = "OL";
