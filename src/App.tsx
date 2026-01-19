@@ -1,3 +1,5 @@
+declare const __COMMIT_HASH__: string
+
 import { useEffect, useRef, useState } from 'react'
 import { Toaster, toast } from 'sonner'
 import { Usb, RotateCcw, X, ArrowUpDown } from 'lucide-react'
@@ -11,6 +13,7 @@ import { Switch } from '@/components/ui/switch'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Progress } from '@/components/ui/progress'
+import { Skeleton } from '@/components/ui/skeleton'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -383,7 +386,10 @@ function App() {
                               </p>
                             </div>
                           ) : (
-                            <p className="text-sm text-muted-foreground italic">...</p>
+                            <div className="space-y-2">
+                              <Skeleton className="h-4 w-20" />
+                              <Skeleton className="h-4 w-24" />
+                            </div>
                           )}
                         </CardContent>
                       </Card>
@@ -499,7 +505,7 @@ function App() {
         <footer className="mt-12 pb-6 text-center text-sm text-muted-foreground">
           <p>not my fault if you blow up 💥</p>
           <p className="mt-1">
-            commit: <code className="text-foreground">__COMMIT_HASH__</code>
+            commit: <code className="text-foreground">{__COMMIT_HASH__}</code>
           </p>
         </footer>
       </div>

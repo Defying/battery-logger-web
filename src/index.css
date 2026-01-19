@@ -67,7 +67,7 @@
 
 .animate-gradient {
   background-size: 200% 100%;
-  animation: gradient-move 3s ease infinite;
+  animation: gradient-move 8s ease infinite;
 }
 
 /* Connected button glow effect */

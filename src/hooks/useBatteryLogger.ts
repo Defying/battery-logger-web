@@ -136,56 +136,57 @@ export function useBatteryLogger() {
     return voltageStable && resistanceStable && unitsMatch
   }, [])
 
-  const cellNumRef = useRef(cellNum)
-  cellNumRef.current = cellNum
-  const savingRef = useRef(false)
+  // Effect to handle completing a cell when we have enough readings
+  useEffect(() => {
+    const targetReadings = averaging ? numReadings : 1
+
+    if (currentReadings.length === targetReadings && currentReadings.length > 0) {
+      // Calculate averages
+      const avgVoltage = currentReadings.reduce((sum, r) => sum + r.voltage, 0) / targetReadings
+      const avgResistance = currentReadings.reduce((sum, r) => sum + r.resistance, 0) / targetReadings
+      const rUnit = currentReadings[0].rUnit
+
+      const reading: Reading = {
+        cellNum: cellNum,
+        cellType: getEffectiveCellType(),
+        voltage: avgVoltage.toFixed(4),
+        resistance: avgResistance.toFixed(4),
+        rUnit: rUnit,
+        timestamp: new Date().toISOString(),
+      }
+
+      // Check for duplicates before adding
+      setReadings(prev => {
+        if (prev.some(r => r.cellNum === reading.cellNum)) {
+          return prev
+        }
+        return [...prev, reading]
+      })
+
+      setCellNum(c => c + 1)
+      setCurrentReadings([])
+      setStabilityText('Reading saved. Move probes to next cell.')
+      waitingForProbeRemovalRef.current = true
+    }
+  }, [currentReadings, averaging, numReadings, cellNum, getEffectiveCellType])
 
   const recordReading = useCallback((voltage: number, resistance: number, rUnit: string) => {
     if (typeof voltage !== 'number' || typeof resistance !== 'number') return
 
-    const targetReadings = averaging ? numReadings : 1
+    // Prevent adding if we just completed (waiting for probe removal)
+    if (waitingForProbeRemovalRef.current) return
 
     setCurrentReadings(prev => {
-      const newReadings = [...prev, { voltage, resistance, rUnit }]
-
-      // Check if this completes the cell
-      if (newReadings.length === targetReadings && !savingRef.current) {
-        savingRef.current = true
-
-        // Calculate averages and save
-        const avgVoltage = newReadings.reduce((sum, r) => sum + r.voltage, 0) / targetReadings
-        const avgResistance = newReadings.reduce((sum, r) => sum + r.resistance, 0) / targetReadings
-
-        const reading: Reading = {
-          cellNum: cellNumRef.current,
-          cellType: getEffectiveCellType(),
-          voltage: avgVoltage.toFixed(4),
-          resistance: avgResistance.toFixed(4),
-          rUnit: rUnit,
-          timestamp: new Date().toISOString(),
-        }
-
-        // Defer other state updates
-        setTimeout(() => {
-          setReadings(prevReadings => [...prevReadings, reading])
-          setCellNum(c => c + 1)
-          setStabilityText('Reading saved. Move probes to next cell.')
-          savingRef.current = false
-        }, 0)
-
-        waitingForProbeRemovalRef.current = true
-        return []
-      } else if (newReadings.length < targetReadings) {
-        setStabilityText('Remove probes before next reading')
-        waitingForProbeRemovalRef.current = true
-        return newReadings
-      }
-
-      return prev
+      const targetReadings = averaging ? numReadings : 1
+      // Don't add more than needed
+      if (prev.length >= targetReadings) return prev
+      return [...prev, { voltage, resistance, rUnit }]
     })
 
+    setStabilityText('Remove probes before next reading')
+    waitingForProbeRemovalRef.current = true
     playBeep()
-  }, [averaging, numReadings, getEffectiveCellType, playBeep])
+  }, [averaging, numReadings, playBeep])
 
   const processData = useCallback((data: Uint8Array) => {
     if (!data || data.length < 10) return

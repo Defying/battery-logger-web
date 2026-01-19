@@ -8,15 +8,10 @@ import path from 'path'
 const commitHash = execSync('git rev-parse --short HEAD').toString().trim()
 
 const config: UserConfig = {
-  plugins: [
-    react(),
-    {
-      name: 'html-transform',
-      transformIndexHtml(html) {
-        return html.replace('__COMMIT_HASH__', commitHash)
-      },
-    },
-  ],
+  plugins: [react()],
+  define: {
+    __COMMIT_HASH__: JSON.stringify(commitHash),
+  },
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
