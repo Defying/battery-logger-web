@@ -426,16 +426,6 @@ function App() {
                 )}
               </div>
 
-              <div className="flex flex-col items-center justify-center space-y-2">
-                <Label htmlFor="sound">Sound</Label>
-                <Switch id="sound" checked={enableSound} onCheckedChange={setEnableSound} />
-              </div>
-
-              <div className="flex flex-col items-center justify-center space-y-2">
-                <Label htmlFor="averaging">Averaging</Label>
-                <Switch id="averaging" checked={averaging} onCheckedChange={setAveraging} />
-              </div>
-
               <div className="space-y-2">
                 <Label htmlFor="numReadings"># of Readings</Label>
                 <Input
@@ -463,6 +453,16 @@ function App() {
                   }}
                   className="text-center font-semibold"
                 />
+              </div>
+
+              <div className="flex flex-col items-center justify-center space-y-2">
+                <Label htmlFor="sound">Sound</Label>
+                <Switch id="sound" checked={enableSound} onCheckedChange={setEnableSound} />
+              </div>
+
+              <div className="flex flex-col items-center justify-center space-y-2">
+                <Label htmlFor="averaging">Averaging</Label>
+                <Switch id="averaging" checked={averaging} onCheckedChange={setAveraging} />
               </div>
             </div>
           </CardContent>
