@@ -5,6 +5,7 @@ import { Toaster, toast } from 'sonner'
 import { Usb, RotateCcw, X, ArrowUpDown } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 
+import DarkVeil from '@/components/DarkVeil'
 import { useBatteryLogger } from '@/hooks/useBatteryLogger'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -245,7 +246,12 @@ function App() {
   const currentReadingNum = currentReadings.length + 1
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen relative">
+      {/* Background */}
+      <div className="fixed inset-0 -z-10">
+        <DarkVeil speed={0.6} warpAmount={0.5} />
+      </div>
+
       <Toaster richColors position="bottom-right" />
 
       <div className="container mx-auto px-4 max-w-4xl">
