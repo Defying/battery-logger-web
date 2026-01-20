@@ -3,6 +3,7 @@ declare const __COMMIT_HASH__: string
 import { useEffect, useRef, useState } from 'react'
 import { Toaster, toast } from 'sonner'
 import { Usb, RotateCcw, X, ArrowUpDown } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
 
 import { useBatteryLogger } from '@/hooks/useBatteryLogger'
 import { Button } from '@/components/ui/button'
@@ -324,88 +325,148 @@ function App() {
         {/* Current Reading Panel */}
         <Card className="my-4">
           <CardContent className="p-6">
-            {(isConnected || readings.length > 0) && (
-              <div className="grid grid-cols-4 gap-4 mb-4">
-                <div className="space-y-1">
-                  <span className="text-sm text-muted-foreground">Cell #</span>
-                  <p className="text-lg font-medium">{cellNum}</p>
-                </div>
-                <div className="space-y-1">
-                  <span className="text-sm text-muted-foreground">Reading #</span>
-                  <p className="text-lg font-medium">{isConnected ? `${currentReadingNum}/${targetReadings}` : '-'}</p>
-                </div>
-                <div className="space-y-1">
-                  <span className="text-sm text-muted-foreground">Voltage</span>
-                  <p className="text-lg font-medium">{currentValues.voltage}</p>
-                </div>
-                <div className="space-y-1">
-                  <span className="text-sm text-muted-foreground">ACIR</span>
-                  <p className="text-lg font-medium">{currentValues.resistance}</p>
-                </div>
-              </div>
-            )}
+            <AnimatePresence>
+              {(isConnected || readings.length > 0) && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.2 }}
+                  className="grid grid-cols-4 gap-4 mb-4"
+                >
+                  <div className="space-y-1">
+                    <span className="text-sm text-muted-foreground">Cell #</span>
+                    <motion.p
+                      key={cellNum}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      className="text-lg font-medium"
+                    >
+                      {cellNum}
+                    </motion.p>
+                  </div>
+                  <div className="space-y-1">
+                    <span className="text-sm text-muted-foreground">Reading #</span>
+                    <p className="text-lg font-medium">{isConnected ? `${currentReadingNum}/${targetReadings}` : '-'}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <span className="text-sm text-muted-foreground">Voltage</span>
+                    <p className="text-lg font-medium">{currentValues.voltage}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <span className="text-sm text-muted-foreground">ACIR</span>
+                    <p className="text-lg font-medium">{currentValues.resistance}</p>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
             <Progress value={stabilityProgress} waiting={isWaiting} className="mb-2" />
             <p className="text-sm text-muted-foreground">{stabilityText}</p>
 
             {/* Nested Measurements Cards (when averaging) */}
-            {averaging && numReadings > 1 && isConnected && (
-              <div className="mt-6 pt-6 border-t -mx-6 px-6">
-                <h3 className="text-sm font-medium text-muted-foreground mb-3">Measurements</h3>
-                <div className="flex flex-wrap gap-3 w-full [&>*]:flex-1 [&>*]:min-w-[120px]">
-                  {Array.from({ length: numReadings }).map((_, i) => {
-                    const reading = currentReadings[i]
-                    return (
-                      <Card key={i} className={cn(
-                        "relative bg-muted/50",
-                        !reading && "border-dashed"
-                      )}>
-                        <CardContent className="p-4">
-                          <div className="flex items-center justify-between mb-2">
-                            <span className="text-sm font-medium text-muted-foreground">
-                              #{i + 1}
-                            </span>
-                            {reading && (
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => deleteMeasurement(i)}
-                                className="h-6 w-6 text-destructive hover:text-destructive hover:bg-destructive/10"
-                              >
-                                <X className="h-4 w-4" />
-                              </Button>
-                            )}
-                          </div>
-                          {reading ? (
-                            <div className="space-y-1">
-                              <p className="text-sm">
-                                <strong>{reading.voltage.toFixed(4)}V</strong>
-                              </p>
-                              <p className="text-sm">
-                                <strong>{reading.resistance.toFixed(4)} {reading.rUnit}</strong>
-                              </p>
-                            </div>
-                          ) : (
-                            <div className="space-y-2">
-                              <Skeleton className="h-4 w-20" />
-                              <Skeleton className="h-4 w-24" />
-                            </div>
-                          )}
-                        </CardContent>
-                      </Card>
-                    )
-                  })}
-                </div>
-              </div>
-            )}
+            <AnimatePresence>
+              {averaging && numReadings > 1 && isConnected && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="mt-6 pt-6 border-t -mx-6 px-6 overflow-hidden"
+                >
+                  <h3 className="text-sm font-medium text-muted-foreground mb-3">Measurements</h3>
+                  <div className="flex flex-wrap gap-3 w-full [&>*]:flex-1 [&>*]:min-w-[120px]">
+                    {Array.from({ length: numReadings }).map((_, i) => {
+                      const reading = currentReadings[i]
+                      return (
+                        <motion.div
+                          key={i}
+                          layout
+                          initial={{ opacity: 0, scale: 0.9 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          transition={{ duration: 0.15, delay: i * 0.03 }}
+                        >
+                          <Card className={cn(
+                            "relative bg-muted/50 h-full",
+                            !reading && "border-dashed"
+                          )}>
+                            <CardContent className="p-4">
+                              <div className="flex items-center justify-between mb-2">
+                                <span className="text-sm font-medium text-muted-foreground">
+                                  #{i + 1}
+                                </span>
+                                <AnimatePresence>
+                                  {reading && (
+                                    <motion.div
+                                      initial={{ opacity: 0, scale: 0 }}
+                                      animate={{ opacity: 1, scale: 1 }}
+                                      exit={{ opacity: 0, scale: 0 }}
+                                    >
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={() => deleteMeasurement(i)}
+                                        className="h-6 w-6 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                      >
+                                        <X className="h-4 w-4" />
+                                      </Button>
+                                    </motion.div>
+                                  )}
+                                </AnimatePresence>
+                              </div>
+                              <AnimatePresence mode="wait">
+                                {reading ? (
+                                  <motion.div
+                                    key="data"
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    exit={{ opacity: 0 }}
+                                    className="space-y-1"
+                                  >
+                                    <p className="text-sm">
+                                      <strong>{reading.voltage.toFixed(4)}V</strong>
+                                    </p>
+                                    <p className="text-sm">
+                                      <strong>{reading.resistance.toFixed(4)} {reading.rUnit}</strong>
+                                    </p>
+                                  </motion.div>
+                                ) : (
+                                  <motion.div
+                                    key="skeleton"
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    exit={{ opacity: 0 }}
+                                    className="space-y-2"
+                                  >
+                                    <Skeleton className="h-4 w-20" />
+                                    <Skeleton className="h-4 w-24" />
+                                  </motion.div>
+                                )}
+                              </AnimatePresence>
+                            </CardContent>
+                          </Card>
+                        </motion.div>
+                      )
+                    })}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </CardContent>
         </Card>
 
         {/* Readings Log */}
-        {(isConnected || readings.length > 0) && (
-          <div className="my-4">
-            <h2 className="text-xl font-semibold mb-3 px-6">{getEffectiveCellType()} Readings</h2>
-            <Card>
+        <AnimatePresence>
+          {(isConnected || readings.length > 0) && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.3 }}
+              className="my-4"
+            >
+              <h2 className="text-xl font-semibold mb-3 px-6">{getEffectiveCellType()} Readings</h2>
+              <Card>
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -453,33 +514,43 @@ function App() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {sortedReadings.map(reading => (
-                    <TableRow key={`${reading.cellNum}-${reading.timestamp}`}>
-                      <TableCell>{reading.cellNum}</TableCell>
-                      <TableCell className={getVoltageClass(reading.voltage)}>
-                        {reading.voltage}V
-                      </TableCell>
-                      <TableCell className={getResistanceClass(reading.resistance)}>
-                        {reading.resistance} {reading.rUnit}
-                      </TableCell>
-                      <TableCell>{reading.timestamp}</TableCell>
-                      <TableCell className="text-right">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleReloadClick(reading.cellNum)}
-                          className="reload-btn transition-transform duration-300"
-                        >
-                          <RotateCcw className="h-5 w-5 text-primary" />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                  <AnimatePresence>
+                    {sortedReadings.map((reading, index) => (
+                      <motion.tr
+                        key={`${reading.cellNum}-${reading.timestamp}`}
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: 20 }}
+                        transition={{ duration: 0.2, delay: index * 0.02 }}
+                        className="border-b transition-colors hover:bg-muted/50"
+                      >
+                        <TableCell>{reading.cellNum}</TableCell>
+                        <TableCell className={getVoltageClass(reading.voltage)}>
+                          {reading.voltage}V
+                        </TableCell>
+                        <TableCell className={getResistanceClass(reading.resistance)}>
+                          {reading.resistance} {reading.rUnit}
+                        </TableCell>
+                        <TableCell>{reading.timestamp}</TableCell>
+                        <TableCell className="text-right">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleReloadClick(reading.cellNum)}
+                            className="reload-btn transition-transform duration-300"
+                          >
+                            <RotateCcw className="h-5 w-5 text-primary" />
+                          </Button>
+                        </TableCell>
+                      </motion.tr>
+                    ))}
+                  </AnimatePresence>
                 </TableBody>
               </Table>
             </Card>
-          </div>
+          </motion.div>
         )}
+        </AnimatePresence>
 
         {/* Controls */}
         <div className="flex gap-3 justify-center mt-12 px-6">

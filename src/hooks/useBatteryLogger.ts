@@ -47,7 +47,7 @@ export function useBatteryLogger() {
   const [currentReadings, setCurrentReadings] = useState<CurrentReading[]>([])
 
   // Settings
-  const [cellType, setCellType] = useState('Molicel P50B')
+  const [cellType, setCellType] = useState('N/A')
   const [customCellType, setCustomCellType] = useState('')
   const [enableSound, setEnableSound] = useState(true)
   const [averaging, setAveraging] = useState(true)
