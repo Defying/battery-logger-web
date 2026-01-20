@@ -29,7 +29,7 @@ import {
 import { cn } from '@/lib/utils'
 
 const CELL_TYPE_GROUPS = [
-  { label: null, items: [{ value: 'N/A', label: 'N/A' }] },
+  { label: null, items: [{ value: 'Generic', label: 'Generic' }] },
   {
     label: 'Molicel',
     items: [
@@ -97,7 +97,16 @@ function App() {
   const [cellToReload, setCellToReload] = useState<number | null>(null)
   const [sortColumn, setSortColumn] = useState<SortColumn | null>(null)
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc')
+  const [isDragging, setIsDragging] = useState(false)
+  const [, setTick] = useState(0)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const dragCounterRef = useRef(0)
+
+  // Update relative times every 10 seconds
+  useEffect(() => {
+    const interval = setInterval(() => setTick(t => t + 1), 10000)
+    return () => clearInterval(interval)
+  }, [])
 
   // Check WebSerial support
   const [isSupported, setIsSupported] = useState(true)
@@ -123,6 +132,39 @@ function App() {
     mediaQuery.addEventListener('change', updateTheme)
     return () => mediaQuery.removeEventListener('change', updateTheme)
   }, [])
+
+  const formatTime = (timestamp: string) => {
+    const date = new Date(timestamp)
+    if (isNaN(date.getTime())) return timestamp // fallback if invalid
+
+    const now = new Date()
+    const diffMs = now.getTime() - date.getTime()
+    const diffSecs = Math.floor(diffMs / 1000)
+    const diffMins = Math.floor(diffSecs / 60)
+    const diffHours = Math.floor(diffMins / 60)
+    const diffDays = Math.floor(diffHours / 24)
+
+    let relative: string
+    if (diffSecs < 60) {
+      relative = diffSecs <= 1 ? 'just now' : `${diffSecs} seconds ago`
+    } else if (diffMins < 60) {
+      relative = diffMins === 1 ? '1 minute ago' : `${diffMins} minutes ago`
+    } else if (diffHours < 24) {
+      relative = diffHours === 1 ? '1 hour ago' : `${diffHours} hours ago`
+    } else {
+      relative = diffDays === 1 ? '1 day ago' : `${diffDays} days ago`
+    }
+
+    const formatted = date.toLocaleString(undefined, {
+      month: 'numeric',
+      day: 'numeric',
+      year: '2-digit',
+      hour: 'numeric',
+      minute: '2-digit',
+    }).toLowerCase()
+
+    return `${relative} (${formatted})`
+  }
 
   const handleSort = (column: SortColumn) => {
     if (sortColumn === column) {
@@ -226,6 +268,46 @@ function App() {
     setClearDialogOpen(false)
   }
 
+  const handleDragEnter = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    dragCounterRef.current++
+    if (e.dataTransfer.items && e.dataTransfer.items.length > 0) {
+      setIsDragging(true)
+    }
+  }
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    dragCounterRef.current--
+    if (dragCounterRef.current === 0) {
+      setIsDragging(false)
+    }
+  }
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+  }
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragging(false)
+    dragCounterRef.current = 0
+
+    const files = e.dataTransfer.files
+    if (files && files.length > 0) {
+      const file = files[0]
+      if (file.name.endsWith('.csv')) {
+        importFromCSV(file)
+      } else {
+        toast.error('Please drop a CSV file')
+      }
+    }
+  }
+
   if (!isSupported) {
     return (
       <div className="min-h-screen flex items-center justify-center p-4">
@@ -246,11 +328,33 @@ function App() {
   const currentReadingNum = currentReadings.length + 1
 
   return (
-    <div className="min-h-screen relative">
+    <div
+      className="min-h-screen relative"
+      onDragEnter={handleDragEnter}
+      onDragLeave={handleDragLeave}
+      onDragOver={handleDragOver}
+      onDrop={handleDrop}
+    >
       {/* Background */}
       <div className="fixed inset-0 -z-10">
         <DarkVeil speed={0.6} warpAmount={0.5} />
       </div>
+
+      {/* Drop overlay */}
+      <AnimatePresence>
+        {isDragging && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-primary/20 backdrop-blur-sm flex items-center justify-center"
+          >
+            <div className="bg-card border-2 border-dashed border-primary rounded-xl p-12 text-center">
+              <p className="text-2xl font-semibold">Drop CSV to import</p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <Toaster richColors position="bottom-right" />
 
@@ -573,7 +677,7 @@ function App() {
                         <TableCell className={getResistanceClass(reading.resistance)}>
                           {reading.resistance} {reading.rUnit}
                         </TableCell>
-                        <TableCell>{reading.timestamp}</TableCell>
+                        <TableCell>{formatTime(reading.timestamp)}</TableCell>
                         <TableCell className="text-right">
                           <Button
                             variant="ghost"

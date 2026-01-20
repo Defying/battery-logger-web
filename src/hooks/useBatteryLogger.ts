@@ -47,7 +47,7 @@ export function useBatteryLogger() {
   const [currentReadings, setCurrentReadings] = useState<CurrentReading[]>([])
 
   // Settings
-  const [cellType, setCellType] = useState('N/A')
+  const [cellType, setCellType] = useState('Generic')
   const [customCellType, setCustomCellType] = useState('')
   const [enableSound, setEnableSound] = useState(true)
   const [averaging, setAveraging] = useState(true)
@@ -424,7 +424,7 @@ export function useBatteryLogger() {
 
     const csvContent = [
       ['Cell #', 'Type', 'Voltage', 'ACIR', 'Time'],
-      ...readings.map(r => [r.cellNum, r.cellType || 'N/A', r.voltage + 'V', r.resistance + ' ' + r.rUnit, r.timestamp]),
+      ...readings.map(r => [r.cellNum, r.cellType || 'Generic', r.voltage + 'V', r.resistance + ' ' + r.rUnit, r.timestamp]),
     ]
       .map(row => row.join(','))
       .join('\n')
@@ -479,6 +479,26 @@ export function useBatteryLogger() {
 
         setReadings(importedReadings)
         setCellNum(maxCellNum + 1)
+
+        // Restore cell type from imported data
+        if (importedReadings.length > 0) {
+          const importedCellType = importedReadings[0].cellType
+          const knownCellTypes = [
+            'Generic',
+            'Molicel P45B', 'Molicel P50B', 'Molicel P42A', 'Molicel P28A', 'Molicel P30B',
+            'Samsung 50S',
+            'Sony | Murata VTC6',
+            'Reliance RS50', 'Ampace JP40', 'Eve 40PL',
+          ]
+
+          if (importedCellType && knownCellTypes.includes(importedCellType)) {
+            setCellType(importedCellType)
+          } else if (importedCellType && importedCellType !== 'Generic') {
+            setCellType('custom')
+            setCustomCellType(importedCellType)
+          }
+        }
+
         toast.success(`Successfully imported ${importedReadings.length} readings`)
       } catch (error) {
         console.error('Error importing CSV:', error)
