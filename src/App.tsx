@@ -456,13 +456,13 @@ function App() {
               </div>
 
               <div className="flex flex-col items-center justify-center space-y-2">
-                <Label htmlFor="sound">Sound</Label>
-                <Switch id="sound" checked={enableSound} onCheckedChange={setEnableSound} />
+                <Label htmlFor="averaging">Averaging</Label>
+                <Switch id="averaging" checked={averaging} onCheckedChange={setAveraging} />
               </div>
 
               <div className="flex flex-col items-center justify-center space-y-2">
-                <Label htmlFor="averaging">Averaging</Label>
-                <Switch id="averaging" checked={averaging} onCheckedChange={setAveraging} />
+                <Label htmlFor="sound">Sound</Label>
+                <Switch id="sound" checked={enableSound} onCheckedChange={setEnableSound} />
               </div>
             </div>
           </CardContent>
