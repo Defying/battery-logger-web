@@ -722,7 +722,7 @@ function App() {
         <footer className="mt-12 pb-6 text-center text-sm text-muted-foreground">
           <p>not my fault if you blow up 💥</p>
           <p className="mt-1">
-            commit: <code className="text-foreground">{__COMMIT_HASH__}</code>
+            commit: <a href={`https://github.com/Defying/battery-logger-web/commit/${__COMMIT_HASH__}`} target="_blank" rel="noopener noreferrer" className="hover:underline"><code className="text-foreground">{__COMMIT_HASH__}</code></a>
           </p>
         </footer>
       </div>
