@@ -265,12 +265,17 @@ function App() {
           <Button
             onClick={toggleConnection}
             className={cn(
-              'rounded-full px-6 transition-all duration-300',
-              isConnected && 'connected-glow'
+              'rounded-full px-6 transition-all duration-300 hover:scale-105',
+              isConnected && 'connected-glow group'
             )}
           >
             {isConnected && <Usb className="h-5 w-5" />}
-            <span>{isConnected ? 'Connected' : 'Connect'}</span>
+            <span className={cn(isConnected && 'group-hover:hidden')}>
+              {isConnected ? 'Connected' : 'Connect'}
+            </span>
+            {isConnected && (
+              <span className="hidden group-hover:inline">Disconnect</span>
+            )}
           </Button>
         </header>
 
