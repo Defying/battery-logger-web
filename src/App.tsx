@@ -11,7 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Progress } from '@/components/ui/progress'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -27,19 +27,35 @@ import {
 } from '@/components/ui/alert-dialog'
 import { cn } from '@/lib/utils'
 
-const CELL_TYPES = [
-  'N/A',
-  'Molicel P45B',
-  'Molicel P50B',
-  'Molicel P42A',
-  'Molicel P28A',
-  'Molicel P30B',
-  'Samsung 50S',
-  'Reliance RS50',
-  'Ampace JP40',
-  'Eve 40PL',
-  'Sony | Murata VTC6',
-  'custom',
+const CELL_TYPE_GROUPS = [
+  { label: null, items: [{ value: 'N/A', label: 'N/A' }] },
+  {
+    label: 'Molicel',
+    items: [
+      { value: 'Molicel P45B', label: 'P45B' },
+      { value: 'Molicel P50B', label: 'P50B' },
+      { value: 'Molicel P42A', label: 'P42A' },
+      { value: 'Molicel P28A', label: 'P28A' },
+      { value: 'Molicel P30B', label: 'P30B' },
+    ],
+  },
+  {
+    label: 'Samsung',
+    items: [{ value: 'Samsung 50S', label: '50S' }],
+  },
+  {
+    label: 'Sony | Murata',
+    items: [{ value: 'Sony | Murata VTC6', label: 'VTC6' }],
+  },
+  {
+    label: 'Other',
+    items: [
+      { value: 'Reliance RS50', label: 'Reliance RS50' },
+      { value: 'Ampace JP40', label: 'Ampace JP40' },
+      { value: 'Eve 40PL', label: 'Eve 40PL' },
+    ],
+  },
+  { label: null, items: [{ value: 'custom', label: 'Custom...' }] },
 ]
 
 type SortColumn = 'cellNum' | 'voltage' | 'resistance' | 'timestamp'
@@ -263,11 +279,26 @@ function App() {
                     <SelectValue placeholder="Select cell type" />
                   </SelectTrigger>
                   <SelectContent>
-                    {CELL_TYPES.map(type => (
-                      <SelectItem key={type} value={type}>
-                        {type === 'custom' ? 'Custom...' : type}
-                      </SelectItem>
-                    ))}
+                    {CELL_TYPE_GROUPS.map((group, groupIndex) =>
+                      group.label ? (
+                        <SelectGroup key={group.label}>
+                          <SelectLabel className="!pl-2 font-semibold text-foreground text-sm">{group.label}</SelectLabel>
+                          {group.items.map(item => (
+                            <SelectItem key={item.value} value={item.value} className="!pl-6 text-xs">
+                              {item.label}
+                            </SelectItem>
+                          ))}
+                        </SelectGroup>
+                      ) : (
+                        <SelectGroup key={`ungrouped-${groupIndex}`}>
+                          {group.items.map(item => (
+                            <SelectItem key={item.value} value={item.value}>
+                              {item.label}
+                            </SelectItem>
+                          ))}
+                        </SelectGroup>
+                      )
+                    )}
                   </SelectContent>
                 </Select>
                 {cellType === 'custom' && (
